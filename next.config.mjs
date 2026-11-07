@@ -1,11 +1,10 @@
-const isGithubActions = process.env.GITHUB_ACTIONS || false;
-const repo = isGithubActions ? '/VERTEX' : '';
-
 /** @type {import('next').NextConfig} */
+const repo = '/VERTEX';
+
 const nextConfig = {
   output: 'export',
   basePath: repo,
-  assetPrefix: repo ? `${repo}/` : undefined,
+  assetPrefix: `${repo}/`,
   trailingSlash: true,
   reactStrictMode: true,
   images: {
