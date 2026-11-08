@@ -69,7 +69,7 @@ export default async function LocaleLayout({
       dir={isRtl ? "rtl" : "ltr"}
       className={isRtl ? "font-vazir" : "font-sans"}
     >
-      <body className="bg-vertex-deep text-vertex-ice selection:bg-vertex-cyan selection:text-vertex-deep antialiased flex flex-col min-h-screen">
+      <body className="bg-vertex-bg text-vertex-primary selection:bg-vertex-blueprint selection:text-white antialiased flex flex-col min-h-screen">
         <Navbar locale={currentLocale} />
         <main className="flex-1 pt-20">{children}</main>
         <Footer locale={currentLocale} />

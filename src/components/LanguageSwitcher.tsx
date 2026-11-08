@@ -18,7 +18,6 @@ export function LanguageSwitcher({ currentLocale }: LanguageSwitcherProps) {
     let newPath = `/${targetLocale}`;
     
     if (pathname) {
-      // replace the leading /en or /fa with the targetLocale
       const segments = pathname.split("/").filter(Boolean);
       if (segments.length > 0 && (segments[0] === "en" || segments[0] === "fa")) {
         segments[0] = targetLocale;
@@ -36,10 +35,10 @@ export function LanguageSwitcher({ currentLocale }: LanguageSwitcherProps) {
       onClick={toggleLanguage}
       type="button"
       aria-label="Switch Language / تغییر زبان"
-      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-medium rounded-lg border border-vertex-border bg-vertex-surface hover:border-vertex-cyan/50 hover:text-vertex-cyan transition-all text-vertex-steel"
+      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-semibold rounded-lg border border-vertex-borderStrong bg-vertex-surface hover:border-vertex-blueprint hover:text-vertex-blueprint transition-all text-vertex-secondary shadow-sm"
     >
-      <Globe className="w-3.5 h-3.5 text-vertex-cyan" />
-      <span className="uppercase">{currentLocale === "en" ? "FA (فارسی)" : "EN (English)"}</span>
+      <Globe className="w-3.5 h-3.5 text-vertex-blueprint" />
+      <span className="uppercase">{currentLocale === "en" ? "فارسی (FA)" : "English (EN)"}</span>
     </button>
   );
 }

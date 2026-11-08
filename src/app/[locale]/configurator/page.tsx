@@ -28,13 +28,13 @@ export default async function ConfiguratorPage({
   const dict = dictionary[currentLocale];
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-12">
+    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-12 bg-vertex-bg">
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <TechBadge variant="cyan">{dict.configurator.badge}</TechBadge>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-vertex-ice font-mono tracking-tight">
+        <TechBadge variant="blueprint">{dict.configurator.badge}</TechBadge>
+        <h1 className="text-4xl sm:text-5xl font-black text-vertex-primary font-mono tracking-tight">
           {dict.configurator.title}
         </h1>
-        <p className="text-base text-vertex-steel font-light leading-relaxed">
+        <p className="text-base text-vertex-secondary font-normal leading-relaxed">
           {dict.configurator.subtitle}
         </p>
       </div>

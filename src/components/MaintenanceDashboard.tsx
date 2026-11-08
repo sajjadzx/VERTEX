@@ -5,16 +5,13 @@ import { Locale, dictionary } from "@/lib/dictionary";
 import { TechBadge } from "./TechBadge";
 import { 
   Activity, 
-  AlertTriangle, 
-  CheckCircle2, 
   Clock, 
   RotateCw, 
   Server, 
-  Sliders, 
-  Thermometer, 
   Wrench,
   ShieldAlert,
-  Radio
+  Radio,
+  CheckCircle2
 } from "lucide-react";
 
 interface MaintenanceDashboardProps {
@@ -105,15 +102,15 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
   };
 
   return (
-    <div className="w-full bg-vertex-surface/80 border border-vertex-border rounded-2xl p-6 lg:p-8 backdrop-blur-xl shadow-2xl">
+    <div className="w-full bg-white border border-vertex-border rounded-2xl p-6 lg:p-8 shadow-card">
       {/* Disclaimer Banner */}
-      <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-        <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+      <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+        <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
-          <span className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider block">
+          <span className="text-xs font-mono font-bold text-amber-800 uppercase tracking-wider block">
             {isFa ? "شبیه‌ساز آموزشی و نمایشی پورتفولیو (DEMO)" : "SIMULATED TELEMETRY ENVIRONMENT (DEMO)"}
           </span>
-          <p className="text-xs text-vertex-steel mt-0.5 leading-relaxed">
+          <p className="text-xs text-amber-800/80 mt-0.5 leading-relaxed font-sans">
             {dict.maintenance.simulatedNotice}
           </p>
         </div>
@@ -122,13 +119,13 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-vertex-border gap-4">
         <div>
-          <TechBadge variant="emerald" icon={<Radio className="w-3.5 h-3.5 animate-pulse" />}>
-            {isFa ? "مرکز تلمتری هوشمند ناوگان" : "FLEET IOT TELEMETRY SIMULATOR"}
+          <TechBadge variant="blueprint" icon={<Radio className="w-3.5 h-3.5 animate-pulse" />}>
+            {isFa ? "مرکز تلمتری و پایش هوشمند ناوگان" : "FLEET IOT TELEMETRY SIMULATOR"}
           </TechBadge>
-          <h3 className="text-2xl lg:text-3xl font-extrabold text-vertex-ice mt-2 font-mono">
-            {isFa ? "داشبورد شبیه‌ساز نگهداری و عیب‌یابی" : "Predictive Maintenance Center"}
+          <h3 className="text-2xl lg:text-3xl font-black text-vertex-primary mt-2 font-mono">
+            {isFa ? "داشبورد عیب‌یابی و پایش پیش‌بینانه تجهیزات" : "Predictive Maintenance Center"}
           </h3>
-          <p className="text-sm text-vertex-steel mt-1 max-w-xl font-light">
+          <p className="text-sm text-vertex-secondary mt-1 max-w-xl font-normal">
             {isFa
               ? "پایش الگوریتمی سلامت الکتروموتورها، ارتعاش یاتاقان‌ها و چرخه‌های باز و بسته شدن درب‌ها."
               : "Algorithmic health scoring, bearing vibration sensors, and door cycle diagnostics."}
@@ -137,13 +134,13 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
 
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
           {/* Filters */}
-          <div className="flex p-1 rounded-lg bg-vertex-deep border border-vertex-border text-xs font-mono">
+          <div className="flex p-1 rounded-lg bg-vertex-elevated border border-vertex-border text-xs font-mono font-bold">
             <button
               onClick={() => setFilter("all")}
               className={`px-3 py-1 rounded transition-all ${
                 filter === "all"
-                  ? "bg-vertex-cyan text-vertex-deep font-bold"
-                  : "text-vertex-steel hover:text-vertex-ice"
+                  ? "bg-vertex-primary text-white"
+                  : "text-vertex-secondary hover:text-vertex-primary"
               }`}
             >
               {isFa ? "همه واحدها" : "All Units"}
@@ -152,8 +149,8 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
               onClick={() => setFilter("elevators")}
               className={`px-3 py-1 rounded transition-all ${
                 filter === "elevators"
-                  ? "bg-vertex-cyan text-vertex-deep font-bold"
-                  : "text-vertex-steel hover:text-vertex-ice"
+                  ? "bg-vertex-primary text-white"
+                  : "text-vertex-secondary hover:text-vertex-primary"
               }`}
             >
               {isFa ? "آسانسورها" : "Elevators"}
@@ -162,8 +159,8 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
               onClick={() => setFilter("escalators")}
               className={`px-3 py-1 rounded transition-all ${
                 filter === "escalators"
-                  ? "bg-vertex-cyan text-vertex-deep font-bold"
-                  : "text-vertex-steel hover:text-vertex-ice"
+                  ? "bg-vertex-primary text-white"
+                  : "text-vertex-secondary hover:text-vertex-primary"
               }`}
             >
               {isFa ? "پله‌برقی‌ها" : "Escalators"}
@@ -174,7 +171,7 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
           <button
             onClick={triggerSyntheticPing}
             disabled={isSimulating}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-mono font-semibold rounded-lg bg-vertex-deep border border-vertex-cyan/40 text-vertex-cyan hover:bg-vertex-cyan hover:text-vertex-deep transition-all shadow-glow"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg bg-white border border-vertex-blueprint text-vertex-blueprint hover:bg-vertex-blueprint hover:text-white transition-all shadow-sm"
           >
             <RotateCw className={`w-3.5 h-3.5 ${isSimulating ? "animate-spin" : ""}`} />
             <span>{isFa ? "پینگ دیاگ سنسورها" : "Trigger Diagnostic"}</span>
@@ -184,25 +181,25 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
 
       {/* Fleet Overview Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-        <div className="p-4 rounded-xl bg-vertex-deep/90 border border-vertex-border">
-          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel">
+        <div className="p-4 rounded-xl bg-vertex-elevated border border-vertex-border">
+          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel font-bold">
             <span>{isFa ? "واحدهای فعال" : "Online Fleet"}</span>
-            <Server className="w-3.5 h-3.5 text-vertex-cyan" />
+            <Server className="w-3.5 h-3.5 text-vertex-blueprint" />
           </div>
-          <div className="text-2xl font-mono font-extrabold text-vertex-ice mt-2">
+          <div className="text-2xl font-mono font-black text-vertex-primary mt-2">
             4 / 4
           </div>
-          <div className="text-[11px] text-emerald-400 font-mono mt-1">
+          <div className="text-[11px] text-emerald-700 font-mono font-bold mt-1">
             100% Connected
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-vertex-deep/90 border border-vertex-border">
-          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel">
+        <div className="p-4 rounded-xl bg-vertex-elevated border border-vertex-border">
+          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel font-bold">
             <span>{isFa ? "میانگین شاخص سلامت" : "Mean Health Index"}</span>
-            <Activity className="w-3.5 h-3.5 text-vertex-cyan" />
+            <Activity className="w-3.5 h-3.5 text-vertex-blueprint" />
           </div>
-          <div className="text-2xl font-mono font-extrabold text-vertex-cyan mt-2">
+          <div className="text-2xl font-mono font-black text-vertex-blueprint mt-2">
             97.0%
           </div>
           <div className="text-[11px] text-vertex-steel font-mono mt-1">
@@ -210,12 +207,12 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-vertex-deep/90 border border-vertex-border">
-          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel">
+        <div className="p-4 rounded-xl bg-vertex-elevated border border-vertex-border">
+          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel font-bold">
             <span>{isFa ? "سرویس‌های آتی" : "Upcoming Service"}</span>
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
           </div>
-          <div className="text-2xl font-mono font-extrabold text-amber-400 mt-2">
+          <div className="text-2xl font-mono font-black text-amber-700 mt-2">
             1 Unit
           </div>
           <div className="text-[11px] text-vertex-steel font-mono mt-1">
@@ -223,25 +220,25 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-vertex-deep/90 border border-vertex-border">
-          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel">
+        <div className="p-4 rounded-xl bg-vertex-elevated border border-vertex-border">
+          <div className="flex items-center justify-between text-xs font-mono text-vertex-steel font-bold">
             <span>{isFa ? "مجموع چرخه‌ها" : "Total Cycles"}</span>
-            <Wrench className="w-3.5 h-3.5 text-vertex-cyan" />
+            <Wrench className="w-3.5 h-3.5 text-vertex-blueprint" />
           </div>
-          <div className="text-2xl font-mono font-extrabold text-vertex-ice mt-2">
+          <div className="text-2xl font-mono font-black text-vertex-primary mt-2">
             987.8K
           </div>
-          <div className="text-[11px] text-emerald-400 font-mono mt-1">
+          <div className="text-[11px] text-emerald-700 font-mono font-bold mt-1">
             0 Fault lockdowns
           </div>
         </div>
       </div>
 
       {/* Equipment Table */}
-      <div className="mt-8 overflow-x-auto">
-        <table className="w-full text-left text-xs font-mono border-collapse">
+      <div className="mt-6 overflow-x-auto">
+        <table className="w-full text-left text-xs font-mono border-collapse min-w-[700px]">
           <thead>
-            <tr className="border-b border-vertex-border text-vertex-steel uppercase tracking-wider">
+            <tr className="border-b border-vertex-border text-vertex-steel uppercase tracking-wider bg-vertex-elevated">
               <th className="py-3 px-4">{isFa ? "کد تجهیز / مدل" : "Unit ID & Model"}</th>
               <th className="py-3 px-4">{isFa ? "وضعیت سنسور" : "Status"}</th>
               <th className="py-3 px-4">{isFa ? "شاخص سلامت" : "Health"}</th>
@@ -250,15 +247,15 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
               <th className="py-3 px-4">{isFa ? "سرویس بعدی" : "Next Inspection"}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-vertex-border/60">
+          <tbody className="divide-y divide-vertex-border">
             {filteredUnits.map((u) => (
               <tr
                 key={u.id}
-                className="hover:bg-vertex-deep/60 transition-colors text-vertex-ice"
+                className="hover:bg-slate-50 transition-colors text-vertex-primary"
               >
                 <td className="py-4 px-4">
-                  <div className="font-bold text-vertex-ice">{u.id}</div>
-                  <div className="text-[11px] text-vertex-steel font-sans">
+                  <div className="font-bold text-vertex-primary">{u.id}</div>
+                  <div className="text-[11px] text-vertex-secondary font-sans font-medium">
                     {isFa ? u.nameFa : u.nameEn}
                   </div>
                 </td>
@@ -266,33 +263,33 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
                       u.status === "optimal"
-                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                        : "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                        : "bg-amber-50 text-amber-800 border border-amber-300"
                     }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
                     {u.status === "optimal" ? "Optimal" : "Check Soon"}
                   </span>
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{u.healthScore}%</span>
-                    <div className="w-16 h-1.5 bg-vertex-deep rounded-full overflow-hidden">
+                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-vertex-cyan rounded-full"
+                        className="h-full bg-vertex-blueprint rounded-full"
                         style={{ width: `${u.healthScore}%` }}
                       />
                     </div>
                   </div>
                 </td>
                 <td className="py-4 px-4">
-                  <div>{u.motorTemp}</div>
+                  <div className="font-bold">{u.motorTemp}</div>
                   <div className="text-[10px] text-vertex-steel">{u.vibration}</div>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-4 px-4 font-bold">
                   {u.cycles.toLocaleString()}
                 </td>
-                <td className="py-4 px-4 text-vertex-steel">
+                <td className="py-4 px-4 text-vertex-secondary">
                   {u.nextService}
                 </td>
               </tr>
@@ -303,7 +300,7 @@ export function MaintenanceDashboard({ locale }: MaintenanceDashboardProps) {
 
       {/* Dynamic Simulated Telemetry Log stream */}
       {diagnosticLog.length > 0 && (
-        <div className="mt-6 p-4 rounded-xl bg-vertex-deep border border-vertex-border font-mono text-[11px] text-vertex-cyan space-y-1">
+        <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 font-mono text-[11px] text-slate-800 space-y-1">
           <div className="text-vertex-steel text-[10px] uppercase tracking-wider mb-1 font-bold">
             {isFa ? "لاگ‌های دریافتی تلمتری شبیه‌سازی شده:" : "Synthetic Telemetry Stream:"}
           </div>

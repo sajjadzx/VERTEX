@@ -4,7 +4,7 @@ import { Locale, dictionary } from "@/lib/dictionary";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TechBadge } from "@/components/TechBadge";
 import { MaintenanceDashboard } from "@/components/MaintenanceDashboard";
-import { Wrench, Clock, ShieldCheck, Cpu, PhoneCall, CheckCircle } from "lucide-react";
+import { Wrench, CheckCircle } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -55,14 +55,14 @@ export default async function MaintenancePage({
   ];
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-24">
+    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-20 bg-vertex-bg">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <TechBadge variant="cyan">{dict.maintenance.badge}</TechBadge>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-vertex-ice font-mono tracking-tight">
+        <TechBadge variant="blueprint">{dict.maintenance.badge}</TechBadge>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-vertex-primary font-mono tracking-tight">
           {dict.maintenance.title}
         </h1>
-        <p className="text-base sm:text-lg text-vertex-steel font-light leading-relaxed">
+        <p className="text-base sm:text-lg text-vertex-secondary font-normal leading-relaxed">
           {dict.maintenance.subtitle}
         </p>
       </div>
@@ -86,23 +86,23 @@ export default async function MaintenancePage({
           {tiers.map((tier, idx) => (
             <div
               key={idx}
-              className="p-8 rounded-2xl bg-vertex-surface border border-vertex-border hover:border-vertex-cyan/50 transition-all shadow-card flex flex-col justify-between"
+              className="p-8 rounded-2xl bg-white border border-vertex-border hover:border-vertex-blueprint transition-all shadow-card flex flex-col justify-between"
             >
               <div>
-                <div className="w-10 h-10 rounded-lg bg-vertex-deep border border-vertex-border flex items-center justify-center text-vertex-cyan mb-4">
+                <div className="w-10 h-10 rounded-lg bg-vertex-elevated border border-vertex-border flex items-center justify-center text-vertex-blueprint mb-4">
                   <Wrench className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-bold font-mono text-vertex-ice">
+                <h2 className="text-xl font-black font-mono text-vertex-primary">
                   {isFa ? tier.titleFa : tier.titleEn}
                 </h2>
-                <p className="text-sm text-vertex-steel font-light mt-3 leading-relaxed">
+                <p className="text-sm text-vertex-secondary font-normal mt-3 leading-relaxed">
                   {isFa ? tier.descFa : tier.descEn}
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-vertex-border/60 flex items-center justify-between text-xs font-mono">
-                <span className="text-vertex-cyan font-bold">{tier.highlight}</span>
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <div className="mt-6 pt-4 border-t border-vertex-border flex items-center justify-between text-xs font-mono">
+                <span className="text-vertex-blueprint font-black">{tier.highlight}</span>
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
               </div>
             </div>
           ))}

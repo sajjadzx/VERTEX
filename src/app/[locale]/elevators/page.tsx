@@ -5,7 +5,8 @@ import { Locale, dictionary } from "@/lib/dictionary";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TechBadge } from "@/components/TechBadge";
 import { ElevatorAnatomy } from "@/components/ElevatorAnatomy";
-import { Check, ArrowUpRight, Gauge, Cpu, Sliders, Shield } from "lucide-react";
+import { CADBlueprintShaft } from "@/components/CADBlueprintShaft";
+import { Check, ArrowUpRight, Sliders, Ruler } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -75,14 +76,14 @@ export default async function ElevatorsPage({
   ];
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-24">
+    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-20 bg-vertex-bg">
       {/* Page Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <TechBadge variant="cyan">{dict.elevators.badge}</TechBadge>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-vertex-ice font-mono tracking-tight">
+        <TechBadge variant="blueprint">{dict.elevators.badge}</TechBadge>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-vertex-primary font-mono tracking-tight">
           {dict.elevators.title}
         </h1>
-        <p className="text-base sm:text-lg text-vertex-steel font-light leading-relaxed">
+        <p className="text-base sm:text-lg text-vertex-secondary font-normal leading-relaxed">
           {dict.elevators.subtitle}
         </p>
       </div>
@@ -92,38 +93,38 @@ export default async function ElevatorsPage({
         {dict.elevators.categories.map((cat) => (
           <div
             key={cat.id}
-            className="rounded-2xl bg-vertex-surface border border-vertex-border p-8 hover:border-vertex-cyan/50 transition-all shadow-card flex flex-col justify-between"
+            className="rounded-2xl bg-white border border-vertex-border p-8 hover:border-vertex-blueprint transition-all shadow-card flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-vertex-border">
-                <span className="text-xs font-mono font-bold text-vertex-cyan uppercase tracking-wider">
+                <span className="text-xs font-mono font-bold text-vertex-blueprint uppercase tracking-wider">
                   SERIES {cat.id.toUpperCase()}
                 </span>
-                <span className="text-xs font-mono text-vertex-ice bg-vertex-deep px-3 py-1 rounded border border-vertex-border">
+                <span className="text-xs font-mono font-bold text-vertex-primary bg-slate-100 px-3 py-1 rounded border border-slate-200">
                   {cat.speed}
                 </span>
               </div>
 
-              <h2 className="text-2xl font-bold font-mono text-vertex-ice mt-4">
+              <h2 className="text-2xl font-black font-mono text-vertex-primary mt-4">
                 {cat.name}
               </h2>
-              <p className="text-sm text-vertex-steel font-light mt-2 leading-relaxed">
+              <p className="text-sm text-vertex-secondary font-normal mt-2 leading-relaxed">
                 {cat.desc}
               </p>
 
               {/* Technical Badges */}
               <div className="grid grid-cols-2 gap-3 mt-6 text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-vertex-deep border border-vertex-border">
-                  <span className="text-vertex-steel text-[10px] block">
+                <div className="p-3 rounded-lg bg-vertex-elevated border border-vertex-border">
+                  <span className="text-vertex-steel text-[10px] block font-semibold">
                     {isFa ? "ظرفیت نامی:" : "Rated Capacity:"}
                   </span>
-                  <span className="text-vertex-ice font-bold">{cat.capacity}</span>
+                  <span className="text-vertex-primary font-black">{cat.capacity}</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-vertex-deep border border-vertex-border">
-                  <span className="text-vertex-steel text-[10px] block">
+                <div className="p-3 rounded-lg bg-vertex-elevated border border-vertex-border">
+                  <span className="text-vertex-steel text-[10px] block font-semibold">
                     {isFa ? "حداکثر ارتفاع:" : "Max Travel Height:"}
                   </span>
-                  <span className="text-vertex-ice font-bold">{cat.travel}</span>
+                  <span className="text-vertex-primary font-black">{cat.travel}</span>
                 </div>
               </div>
 
@@ -132,9 +133,9 @@ export default async function ElevatorsPage({
                 {cat.specs.map((sp, i) => (
                   <li
                     key={i}
-                    className="flex items-center gap-2 text-xs font-mono text-vertex-steel"
+                    className="flex items-center gap-2 text-xs font-mono text-vertex-secondary"
                   >
-                    <Check className="w-4 h-4 text-vertex-cyan shrink-0" />
+                    <Check className="w-4 h-4 text-vertex-blueprint shrink-0" />
                     <span>{sp}</span>
                   </li>
                 ))}
@@ -144,7 +145,7 @@ export default async function ElevatorsPage({
             <div className="mt-8 pt-6 border-t border-vertex-border flex items-center justify-between">
               <NextLink
                 href={`/${currentLocale}/configurator`}
-                className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-vertex-cyan hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-vertex-blueprint hover:underline"
               >
                 <Sliders className="w-3.5 h-3.5" />
                 <span>{isFa ? "شخصی‌سازی کابین" : "Customize Cabin"}</span>
@@ -152,9 +153,9 @@ export default async function ElevatorsPage({
 
               <NextLink
                 href={`/${currentLocale}/contact`}
-                className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-vertex-ice hover:text-vertex-cyan"
+                className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-vertex-primary hover:text-vertex-blueprint"
               >
-                <span>{isFa ? "استعلام قیمت مهندسی" : "Request Spec Sheet"}</span>
+                <span>{isFa ? "استعلام مشخصات مهندسی" : "Request Spec Sheet"}</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </NextLink>
             </div>
@@ -162,8 +163,13 @@ export default async function ElevatorsPage({
         ))}
       </div>
 
+      {/* Embedded CAD Blueprint Shaft Component */}
+      <div className="pt-4">
+        <CADBlueprintShaft locale={currentLocale} />
+      </div>
+
       {/* Engineering Specification Matrix Table */}
-      <div className="space-y-6">
+      <div className="space-y-6 pt-6">
         <SectionHeader
           badge={isFa ? "داده‌های متالورژی و سینماتیک" : "KINEMATICS MATRIX"}
           title={dict.elevators.techSpecsTitle}
@@ -174,10 +180,10 @@ export default async function ElevatorsPage({
           }
         />
 
-        <div className="rounded-xl border border-vertex-border bg-vertex-surface/60 overflow-x-auto shadow-xl">
+        <div className="rounded-xl border border-vertex-border bg-white overflow-x-auto shadow-sm">
           <table className="w-full text-left text-xs font-mono border-collapse min-w-[700px]">
             <thead>
-              <tr className="border-b border-vertex-border text-vertex-steel uppercase bg-vertex-deep/60">
+              <tr className="border-b border-vertex-border text-vertex-steel uppercase bg-vertex-elevated">
                 <th className="py-4 px-4">{isFa ? "مدل / معماری" : "Model / Architecture"}</th>
                 <th className="py-4 px-4">{isFa ? "سرعت نامی" : "Velocity"}</th>
                 <th className="py-4 px-4">{isFa ? "ظرفیت باربری" : "Capacity"}</th>
@@ -186,20 +192,20 @@ export default async function ElevatorsPage({
                 <th className="py-4 px-4">{isFa ? "تراز صوتی داخل کابین" : "Internal Acoustic"}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-vertex-border/60">
+            <tbody className="divide-y divide-vertex-border">
               {matrixData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-vertex-deep/50 transition-colors">
+                <tr key={idx} className="hover:bg-slate-50 transition-colors">
                   <td className="py-4 px-4">
-                    <div className="font-bold text-vertex-ice">{row.model}</div>
-                    <div className="text-[11px] text-vertex-steel font-sans">
+                    <div className="font-bold text-vertex-primary">{row.model}</div>
+                    <div className="text-[11px] text-vertex-secondary font-sans font-medium">
                       {isFa ? row.typeFa : row.typeEn}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-vertex-cyan font-bold">{row.speed}</td>
-                  <td className="py-4 px-4 text-vertex-ice">{row.capacity}</td>
-                  <td className="py-4 px-4 text-vertex-steel">{row.maxRise}</td>
-                  <td className="py-4 px-4 text-vertex-steel">{row.drive}</td>
-                  <td className="py-4 px-4 text-emerald-400 font-bold">{row.noise}</td>
+                  <td className="py-4 px-4 text-vertex-blueprint font-black">{row.speed}</td>
+                  <td className="py-4 px-4 text-vertex-primary font-bold">{row.capacity}</td>
+                  <td className="py-4 px-4 text-vertex-secondary">{row.maxRise}</td>
+                  <td className="py-4 px-4 text-vertex-secondary">{row.drive}</td>
+                  <td className="py-4 px-4 text-emerald-700 font-bold">{row.noise}</td>
                 </tr>
               ))}
             </tbody>
@@ -208,7 +214,7 @@ export default async function ElevatorsPage({
       </div>
 
       {/* Embedded Elevator Anatomy Component */}
-      <div className="pt-8">
+      <div className="pt-4">
         <ElevatorAnatomy locale={currentLocale} />
       </div>
     </div>

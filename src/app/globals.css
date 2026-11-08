@@ -11,54 +11,69 @@
 
 html {
   scroll-behavior: smooth;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background-color: #0b1118;
-  color: #f4f7fa;
+  background-color: #F8FAFC;
+  color: #0F172A;
   min-height: 100vh;
   overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Custom modern scrollbar */
+/* Precision Light Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #101923;
+  background: #F1F5F9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #233547;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00c2b8;
+  background: #0284C7;
 }
 
-/* Engineering Technical Grid */
-.bg-tech-grid {
-  background-size: 40px 40px;
+/* CAD Technical Blueprint Graph */
+.bg-cad-paper {
+  background-size: 24px 24px;
   background-image: 
-    linear-gradient(to right, rgba(169, 183, 196, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(169, 183, 196, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
 }
 
-.bg-radial-glow {
-  background: radial-gradient(circle at 50% 0%, rgba(0, 194, 184, 0.12) 0%, transparent 65%);
+.bg-cad-dense {
+  background-size: 12px 12px;
+  background-image: 
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
 }
 
-/* Pulse animation for active simulation sensors */
-@keyframes sensor-pulse {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.8; }
+/* Architectural dimension line markings */
+.dimension-line {
+  position: relative;
+}
+.dimension-line::before,
+.dimension-line::after {
+  content: '';
+  position: absolute;
+  background-color: #0284C7;
 }
 
-.animate-sensor {
-  animation: sensor-pulse 2.2s infinite ease-in-out;
+/* Precision Sensor / Pulse */
+@keyframes cadence-pulse {
+  0% { transform: scale(0.96); opacity: 0.7; }
+  50% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(0.96); opacity: 0.7; }
+}
+
+.animate-cadence {
+  animation: cadence-pulse 2s infinite ease-in-out;
 }

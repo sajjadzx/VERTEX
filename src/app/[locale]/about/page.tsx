@@ -4,7 +4,7 @@ import NextLink from "next/link";
 import { Locale, dictionary } from "@/lib/dictionary";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TechBadge } from "@/components/TechBadge";
-import { ShieldCheck, Award, Target, Compass, ArrowUpRight, Cpu } from "lucide-react";
+import { ShieldCheck, Cpu } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -31,40 +31,40 @@ export default async function AboutPage({
   const isFa = currentLocale === "fa";
 
   const standards = [
-    { code: "EN 81-20/50:2020", title: "Safety rules for the construction and installation of lifts" },
-    { code: "EN 115-1:2017", title: "Safety of escalators and moving walks" },
-    { code: "ISO 9001:2015", title: "Quality management systems certification" },
-    { code: "ISO 14001:2015", title: "Environmental management systems" },
+    { code: "EN 81-20/50:2020", title: "Safety rules for the construction and installation of passenger and goods lifts" },
+    { code: "EN 115-1:2017", title: "Safety of escalators and moving walks - Construction and installation" },
+    { code: "مبحث ۱۵ مقررات ملی", title: "طراحی، ساخت و نظارت بر آسانسورها و پلکان‌برقی‌های ساختمان" },
+    { code: "ISO 9001:2015", title: "Quality management systems certification for precision lift mechanisms" },
+    { code: "ISO 14001:2015", title: "Environmental management systems and green regenerative drives" },
     { code: "ASME A17.1 / CSA B44", title: "Safety code for elevators and escalators (Americas)" },
-    { code: "VDI 4707 Part 1", title: "Energy efficiency classification of lifts: Class A" },
   ];
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-24">
+    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-20 bg-vertex-bg">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <TechBadge variant="cyan">{dict.about.badge}</TechBadge>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-vertex-ice font-mono tracking-tight">
+        <TechBadge variant="blueprint">{dict.about.badge}</TechBadge>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-vertex-primary font-mono tracking-tight">
           {dict.about.title}
         </h1>
-        <p className="text-base sm:text-lg text-vertex-steel font-light leading-relaxed">
+        <p className="text-base sm:text-lg text-vertex-secondary font-normal leading-relaxed">
           {dict.about.subtitle}
         </p>
       </div>
 
       {/* Philosophy Section */}
-      <div className="rounded-2xl bg-vertex-surface border border-vertex-border p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center shadow-card">
+      <div className="rounded-2xl bg-white border border-vertex-border p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center shadow-card">
         <div className="lg:col-span-7 space-y-4">
-          <TechBadge variant="steel">
+          <TechBadge variant="slate">
             {isFa ? "فلسفه مهندسی ما" : "OUR CREED"}
           </TechBadge>
-          <h2 className="text-2xl sm:text-3xl font-bold font-mono text-vertex-ice">
+          <h2 className="text-2xl sm:text-3xl font-black font-mono text-vertex-primary">
             {dict.about.missionTitle}
           </h2>
-          <p className="text-sm sm:text-base text-vertex-steel font-light leading-relaxed">
+          <p className="text-sm sm:text-base text-vertex-secondary font-normal leading-relaxed">
             {dict.about.missionText}
           </p>
-          <div className="pt-4 flex items-center gap-4 text-xs font-mono text-vertex-cyan">
+          <div className="pt-4 flex items-center gap-4 text-xs font-mono font-bold text-vertex-blueprint">
             <span>ZURICH HEADQUARTERS</span>
             <span>•</span>
             <span>DUBAI R&D HUB</span>
@@ -73,26 +73,26 @@ export default async function AboutPage({
           </div>
         </div>
 
-        <div className="lg:col-span-5 p-6 rounded-xl bg-vertex-deep border border-vertex-border space-y-3 font-mono text-xs text-vertex-steel">
-          <div className="text-vertex-ice font-bold text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-vertex-cyan" />
+        <div className="lg:col-span-5 p-6 rounded-xl bg-vertex-elevated border border-vertex-border space-y-3 font-mono text-xs text-vertex-secondary">
+          <div className="text-vertex-primary font-bold text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-vertex-blueprint" />
             <span>R&D Test Tower Specs</span>
           </div>
-          <div className="flex justify-between py-1 border-b border-vertex-border">
+          <div className="flex justify-between py-1.5 border-b border-vertex-border">
             <span>Tower Height:</span>
-            <span className="text-vertex-cyan font-bold">245 Meters</span>
+            <span className="text-vertex-blueprint font-black">245 Meters</span>
           </div>
-          <div className="flex justify-between py-1 border-b border-vertex-border">
+          <div className="flex justify-between py-1.5 border-b border-vertex-border">
             <span>Test Shafts:</span>
-            <span className="text-vertex-ice font-bold">7 High-Velocity Shafts</span>
+            <span className="text-vertex-primary font-bold">7 High-Velocity Shafts</span>
           </div>
-          <div className="flex justify-between py-1 border-b border-vertex-border">
+          <div className="flex justify-between py-1.5 border-b border-vertex-border">
             <span>Max Test Speed:</span>
-            <span className="text-vertex-cyan font-bold">18.0 m/s Simulation</span>
+            <span className="text-vertex-blueprint font-black">18.0 m/s Simulation</span>
           </div>
-          <div className="flex justify-between py-1">
+          <div className="flex justify-between py-1.5">
             <span>Seismic Shaker:</span>
-            <span className="text-emerald-400 font-bold">Zone 4 Calibrated</span>
+            <span className="text-emerald-700 font-bold">Zone 4 Calibrated</span>
           </div>
         </div>
       </div>
@@ -113,15 +113,15 @@ export default async function AboutPage({
           {dict.about.values.map((val, idx) => (
             <div
               key={idx}
-              className="p-8 rounded-2xl bg-vertex-surface border border-vertex-border hover:border-vertex-cyan/50 transition-all shadow-card"
+              className="p-8 rounded-2xl bg-white border border-vertex-border hover:border-vertex-blueprint transition-all shadow-card"
             >
-              <div className="text-xs font-mono font-bold text-vertex-cyan uppercase tracking-wider mb-4">
+              <div className="text-xs font-mono font-bold text-vertex-blueprint uppercase tracking-wider mb-4">
                 PRINCIPLE 0{idx + 1}
               </div>
-              <h3 className="text-xl font-bold font-mono text-vertex-ice">
+              <h3 className="text-xl font-black font-mono text-vertex-primary">
                 {val.title}
               </h3>
-              <p className="text-sm text-vertex-steel font-light mt-3 leading-relaxed">
+              <p className="text-sm text-vertex-secondary font-normal mt-3 leading-relaxed">
                 {val.desc}
               </p>
             </div>
@@ -145,14 +145,14 @@ export default async function AboutPage({
           {standards.map((s, idx) => (
             <div
               key={idx}
-              className="p-4 rounded-xl bg-vertex-surface/70 border border-vertex-border flex items-start gap-3"
+              className="p-4 rounded-xl bg-white border border-vertex-border flex items-start gap-3 shadow-sm"
             >
-              <ShieldCheck className="w-5 h-5 text-vertex-cyan shrink-0 mt-0.5" />
+              <ShieldCheck className="w-5 h-5 text-vertex-blueprint shrink-0 mt-0.5" />
               <div>
-                <div className="text-xs font-mono font-bold text-vertex-ice">
+                <div className="text-xs font-mono font-bold text-vertex-primary">
                   {s.code}
                 </div>
-                <div className="text-xs text-vertex-steel font-light mt-0.5">
+                <div className="text-xs text-vertex-secondary font-normal mt-0.5">
                   {s.title}
                 </div>
               </div>

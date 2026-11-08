@@ -12,7 +12,6 @@ import {
   Send, 
   Check, 
   Sliders, 
-  Clock, 
   FileText 
 } from "lucide-react";
 
@@ -69,14 +68,14 @@ export default function ContactPage({
   ];
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-20">
+    <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-20 bg-vertex-bg">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
-        <TechBadge variant="cyan">{dict.contact.badge}</TechBadge>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-vertex-ice font-mono tracking-tight">
+        <TechBadge variant="blueprint">{dict.contact.badge}</TechBadge>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-vertex-primary font-mono tracking-tight">
           {dict.contact.title}
         </h1>
-        <p className="text-base sm:text-lg text-vertex-steel font-light leading-relaxed">
+        <p className="text-base sm:text-lg text-vertex-secondary font-normal leading-relaxed">
           {dict.contact.subtitle}
         </p>
 
@@ -86,8 +85,8 @@ export default function ContactPage({
             onClick={() => setActiveTab("wizard")}
             className={`px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 ${
               activeTab === "wizard"
-                ? "bg-vertex-cyan text-vertex-deep shadow-cyan"
-                : "bg-vertex-surface text-vertex-steel border border-vertex-border hover:border-vertex-cyan/40"
+                ? "bg-vertex-blueprint text-white shadow-sm"
+                : "bg-white text-vertex-secondary border border-vertex-borderStrong hover:border-vertex-blueprint"
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -97,8 +96,8 @@ export default function ContactPage({
             onClick={() => setActiveTab("form")}
             className={`px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 ${
               activeTab === "form"
-                ? "bg-vertex-cyan text-vertex-deep shadow-cyan"
-                : "bg-vertex-surface text-vertex-steel border border-vertex-border hover:border-vertex-cyan/40"
+                ? "bg-vertex-blueprint text-white shadow-sm"
+                : "bg-white text-vertex-secondary border border-vertex-borderStrong hover:border-vertex-blueprint"
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -112,16 +111,16 @@ export default function ContactPage({
         <ConsultationWizard locale={currentLocale} />
       ) : (
         /* Direct Contact Form */
-        <div className="max-w-3xl mx-auto w-full bg-vertex-surface/80 border border-vertex-border rounded-2xl p-6 lg:p-8 backdrop-blur-xl shadow-2xl">
+        <div className="max-w-3xl mx-auto w-full bg-white border border-vertex-border rounded-2xl p-6 lg:p-8 shadow-card">
           {!formSubmitted ? (
             <form onSubmit={handleDirectSubmit} className="space-y-6">
-              <h3 className="text-xl font-bold font-mono text-vertex-ice border-b border-vertex-border pb-4">
+              <h3 className="text-xl font-black font-mono text-vertex-primary border-b border-vertex-border pb-4">
                 {dict.contact.form.title}
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-mono uppercase text-vertex-ice font-semibold block mb-1">
+                  <label className="text-xs font-mono uppercase text-vertex-primary font-bold block mb-1">
                     {dict.contact.form.name} *
                   </label>
                   <input
@@ -129,11 +128,11 @@ export default function ContactPage({
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg bg-vertex-deep border border-vertex-border text-vertex-ice text-xs focus:border-vertex-cyan focus:outline-none"
+                    className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-300 text-vertex-primary text-xs focus:border-vertex-blueprint focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-mono uppercase text-vertex-ice font-semibold block mb-1">
+                  <label className="text-xs font-mono uppercase text-vertex-primary font-bold block mb-1">
                     {dict.contact.form.email} *
                   </label>
                   <input
@@ -141,31 +140,31 @@ export default function ContactPage({
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg bg-vertex-deep border border-vertex-border text-vertex-ice text-xs focus:border-vertex-cyan focus:outline-none"
+                    className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-300 text-vertex-primary text-xs focus:border-vertex-blueprint focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-mono uppercase text-vertex-ice font-semibold block mb-1">
+                  <label className="text-xs font-mono uppercase text-vertex-primary font-bold block mb-1">
                     {dict.contact.form.phone}
                   </label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg bg-vertex-deep border border-vertex-border text-vertex-ice text-xs focus:border-vertex-cyan focus:outline-none"
+                    className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-300 text-vertex-primary text-xs focus:border-vertex-blueprint focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-mono uppercase text-vertex-ice font-semibold block mb-1">
+                  <label className="text-xs font-mono uppercase text-vertex-primary font-bold block mb-1">
                     {dict.contact.form.projectType}
                   </label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg bg-vertex-deep border border-vertex-border text-vertex-ice text-xs focus:border-vertex-cyan focus:outline-none"
+                    className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-300 text-vertex-primary text-xs focus:border-vertex-blueprint focus:outline-none"
                   >
                     {dict.contact.form.types.map((t, idx) => (
                       <option key={idx} value={t}>
@@ -177,7 +176,7 @@ export default function ContactPage({
               </div>
 
               <div>
-                <label className="text-xs font-mono uppercase text-vertex-ice font-semibold block mb-1">
+                <label className="text-xs font-mono uppercase text-vertex-primary font-bold block mb-1">
                   {dict.contact.form.message} *
                 </label>
                 <textarea
@@ -190,13 +189,13 @@ export default function ContactPage({
                       ? "لطفاً تعداد طبقات، نوع کاربری، ابعاد تقریبی چاه و سرعت مورد انتظار را ذکر فرمایید..."
                       : "Describe your project parameters, floor count, shaft dimensions, and traffic demands..."
                   }
-                  className="w-full px-4 py-2.5 rounded-lg bg-vertex-deep border border-vertex-border text-vertex-ice text-xs focus:border-vertex-cyan focus:outline-none"
+                  className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-300 text-vertex-primary text-xs focus:border-vertex-blueprint focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-lg bg-vertex-cyan text-vertex-deep font-bold text-xs uppercase tracking-wider hover:bg-vertex-cyanHover transition-all shadow-cyan flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-lg bg-vertex-primary text-white font-bold text-xs uppercase tracking-wider hover:bg-vertex-blueprint transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 <span>{dict.contact.form.submit}</span>
                 <Send className="w-4 h-4" />
@@ -204,13 +203,13 @@ export default function ContactPage({
             </form>
           ) : (
             <div className="p-8 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-300">
                 <Check className="w-6 h-6" />
               </div>
-              <h4 className="text-xl font-bold font-mono text-vertex-ice">
-                {isFa ? "پیام با موفقیت ثبت شد" : "Technical Dossier Transmitted"}
+              <h4 className="text-xl font-bold font-mono text-emerald-950">
+                {isFa ? "پرونده فنی با موفقیت ثبت شد" : "Technical Dossier Transmitted"}
               </h4>
-              <p className="text-xs sm:text-sm text-vertex-steel font-light max-w-lg mx-auto">
+              <p className="text-xs sm:text-sm text-emerald-800 font-normal max-w-lg mx-auto">
                 {dict.contact.form.success}
               </p>
             </div>
@@ -220,7 +219,7 @@ export default function ContactPage({
 
       {/* Global Offices */}
       <div className="space-y-8">
-        <h3 className="text-2xl font-bold font-mono text-vertex-ice text-center">
+        <h3 className="text-2xl font-black font-mono text-vertex-primary text-center">
           {isFa ? "دفاتر و مراکز فنی بین‌المللی" : "International Engineering Hubs"}
         </h3>
 
@@ -228,23 +227,23 @@ export default function ContactPage({
           {offices.map((office, idx) => (
             <div
               key={idx}
-              className="p-6 rounded-2xl bg-vertex-surface border border-vertex-border hover:border-vertex-cyan/40 transition-all shadow-card space-y-4 text-xs font-mono"
+              className="p-6 rounded-2xl bg-white border border-vertex-border hover:border-vertex-blueprint transition-all shadow-card space-y-4 text-xs font-mono"
             >
-              <div className="flex items-center gap-2 text-vertex-cyan font-bold text-sm">
+              <div className="flex items-center gap-2 text-vertex-blueprint font-black text-sm">
                 <Building2 className="w-4 h-4 shrink-0" />
                 <span>{isFa ? office.cityFa : office.cityEn}</span>
               </div>
-              <div className="space-y-2 text-vertex-steel font-sans">
+              <div className="space-y-2 text-vertex-secondary font-sans font-medium">
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-vertex-cyan shrink-0 mt-0.5" />
+                  <MapPin className="w-3.5 h-3.5 text-vertex-blueprint shrink-0 mt-0.5" />
                   <span>{isFa ? office.addressFa : office.addressEn}</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
-                  <Phone className="w-3.5 h-3.5 text-vertex-cyan shrink-0" />
+                  <Phone className="w-3.5 h-3.5 text-vertex-blueprint shrink-0" />
                   <span dir="ltr">{office.phone}</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
-                  <Mail className="w-3.5 h-3.5 text-vertex-cyan shrink-0" />
+                  <Mail className="w-3.5 h-3.5 text-vertex-blueprint shrink-0" />
                   <span>{office.email}</span>
                 </div>
               </div>

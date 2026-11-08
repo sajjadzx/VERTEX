@@ -3,27 +3,28 @@ import { cn } from "@/lib/utils";
 
 interface TechBadgeProps {
   children: React.ReactNode;
-  variant?: "cyan" | "steel" | "emerald";
+  variant?: "blueprint" | "slate" | "emerald" | "amber";
   className?: string;
   icon?: React.ReactNode;
 }
 
 export function TechBadge({
   children,
-  variant = "cyan",
+  variant = "blueprint",
   className,
   icon,
 }: TechBadgeProps) {
   const styles = {
-    cyan: "text-vertex-cyan border-vertex-cyan/30 bg-vertex-cyan/10 shadow-[0_0_15px_rgba(0,194,184,0.15)]",
-    steel: "text-vertex-steel border-vertex-steel/30 bg-vertex-surface/60",
-    emerald: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    blueprint: "text-vertex-blueprint bg-vertex-blueprint/10 border-vertex-blueprint/30",
+    slate: "text-vertex-secondary bg-vertex-elevated border-vertex-borderStrong",
+    emerald: "text-emerald-700 bg-emerald-50 border-emerald-300",
+    amber: "text-amber-800 bg-amber-50 border-amber-300",
   };
 
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-2 px-3 py-1 text-xs font-mono tracking-widest uppercase rounded-full border transition-all duration-300",
+        "inline-flex items-center gap-2 px-3 py-1 text-xs font-mono font-semibold tracking-wider uppercase rounded-full border transition-all duration-200 shadow-sm",
         styles[variant],
         className
       )}

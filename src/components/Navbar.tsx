@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/navigation";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ArrowUpRight, Cpu } from "lucide-react";
+import { Menu, X, ArrowUpRight, Compass } from "lucide-react";
 import { Locale, dictionary } from "@/lib/dictionary";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { cn } from "@/lib/utils";
@@ -21,7 +20,7 @@ export function Navbar({ locale }: NavbarProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 15);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -44,8 +43,8 @@ export function Navbar({ locale }: NavbarProps) {
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-300",
         scrolled
-          ? "bg-vertex-deep/90 backdrop-blur-md border-b border-vertex-border/80 shadow-card py-3"
-          : "bg-transparent py-5"
+          ? "bg-white/95 backdrop-blur-md border-b border-vertex-border shadow-card py-2.5"
+          : "bg-white/80 backdrop-blur-sm border-b border-vertex-border/60 py-4"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,27 +54,26 @@ export function Navbar({ locale }: NavbarProps) {
             href={`/${locale}`}
             className="flex items-center gap-3 group"
           >
-            <div className="relative w-10 h-10 rounded-lg bg-vertex-surface border border-vertex-border flex items-center justify-center overflow-hidden group-hover:border-vertex-cyan/60 transition-colors shadow-glow">
-              <div className="absolute inset-0 bg-gradient-to-tr from-vertex-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="w-10 h-10 rounded-xl bg-vertex-primary border border-vertex-borderStrong flex items-center justify-center overflow-hidden group-hover:bg-vertex-blueprint transition-colors shadow-sm">
               <div className="flex flex-col items-center justify-center gap-1">
-                <span className="w-4 h-0.5 bg-vertex-cyan rounded-full transition-transform group-hover:-translate-y-0.5" />
-                <span className="w-5 h-0.5 bg-vertex-ice rounded-full" />
-                <span className="w-3 h-0.5 bg-vertex-cyan rounded-full transition-transform group-hover:translate-y-0.5" />
+                <span className="w-4 h-0.5 bg-white rounded-full transition-transform group-hover:-translate-y-0.5" />
+                <span className="w-5 h-0.5 bg-vertex-cyan rounded-full" />
+                <span className="w-3 h-0.5 bg-white rounded-full transition-transform group-hover:translate-y-0.5" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-extrabold tracking-widest text-vertex-ice font-mono flex items-center gap-1">
+              <span className="text-xl font-black tracking-widest text-vertex-primary font-mono flex items-center gap-1">
                 VERTEX
-                <span className="w-1.5 h-1.5 rounded-full bg-vertex-cyan shadow-cyan inline-block" />
+                <span className="w-1.5 h-1.5 rounded-full bg-vertex-blueprint inline-block" />
               </span>
-              <span className="text-[10px] tracking-wider text-vertex-steel font-sans uppercase">
-                {locale === "fa" ? "فناوری آسانسور و پله‌برقی" : "Mobility Engineering"}
+              <span className="text-[10px] tracking-wider text-vertex-steel font-mono uppercase font-semibold">
+                {locale === "fa" ? "مهندسی بالابرهای ساختمانی" : "Precision Lift Engineering"}
               </span>
             </div>
           </NextLink>
 
           {/* Desktop Navigation */}
-          <nav className="hidden xl:flex items-center gap-1.5 2xl:gap-3">
+          <nav className="hidden xl:flex items-center gap-1.5 2xl:gap-2">
             {navLinks.map((link) => {
               const isActive =
                 link.href === `/${locale}`
@@ -87,27 +85,27 @@ export function Navbar({ locale }: NavbarProps) {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded-md transition-colors relative",
+                    "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors relative",
                     isActive
-                      ? "text-vertex-cyan bg-vertex-cyan/10 font-semibold"
-                      : "text-vertex-steel hover:text-vertex-ice hover:bg-vertex-surface/60"
+                      ? "text-vertex-blueprint bg-vertex-blueprint/10 font-bold"
+                      : "text-vertex-secondary hover:text-vertex-primary hover:bg-vertex-elevated"
                   )}
                 >
                   {link.label}
                   {isActive && (
-                    <span className="absolute bottom-0 inset-x-2 h-[2px] bg-vertex-cyan rounded-full shadow-cyan" />
+                    <span className="absolute bottom-0 inset-x-2 h-[2px] bg-vertex-blueprint rounded-full" />
                   )}
                 </NextLink>
               );
             })}
           </nav>
 
-          {/* Right Action & Switcher */}
+          {/* Right Action & Language Switcher */}
           <div className="hidden lg:flex items-center gap-3">
             <LanguageSwitcher currentLocale={locale} />
             <NextLink
               href={`/${locale}/contact`}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-vertex-cyan text-vertex-deep hover:bg-vertex-cyanHover transition-all shadow-cyan hover:shadow-cyanLg"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-vertex-primary text-white hover:bg-vertex-blueprint transition-all shadow-sm"
             >
               <span>{dict.nav.requestConsultation}</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -119,7 +117,7 @@ export function Navbar({ locale }: NavbarProps) {
             <LanguageSwitcher currentLocale={locale} />
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg bg-vertex-surface border border-vertex-border text-vertex-ice hover:text-vertex-cyan"
+              className="p-2 rounded-lg bg-vertex-elevated border border-vertex-border text-vertex-primary hover:text-vertex-blueprint"
               aria-label="Toggle navigation menu"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -130,7 +128,7 @@ export function Navbar({ locale }: NavbarProps) {
 
       {/* Mobile Drawer */}
       {isOpen && (
-        <div className="lg:hidden bg-vertex-deep/98 border-b border-vertex-border px-4 pt-4 pb-6 mt-3 space-y-2 backdrop-blur-xl animate-in slide-in-from-top-2">
+        <div className="lg:hidden bg-white border-b border-vertex-border px-4 pt-4 pb-6 mt-3 space-y-2 shadow-float animate-in slide-in-from-top-2">
           {navLinks.map((link) => {
             const isActive =
               link.href === `/${locale}`
@@ -142,10 +140,10 @@ export function Navbar({ locale }: NavbarProps) {
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className={cn(
-                  "block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  "block px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors",
                   isActive
-                    ? "bg-vertex-cyan/15 text-vertex-cyan font-bold"
-                    : "text-vertex-steel hover:bg-vertex-surface hover:text-vertex-ice"
+                    ? "bg-vertex-blueprint/10 text-vertex-blueprint font-bold"
+                    : "text-vertex-secondary hover:bg-vertex-elevated hover:text-vertex-primary"
                 )}
               >
                 {link.label}
@@ -156,7 +154,7 @@ export function Navbar({ locale }: NavbarProps) {
             <NextLink
               href={`/${locale}/contact`}
               onClick={() => setIsOpen(false)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-vertex-cyan text-vertex-deep font-bold text-sm shadow-cyan"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-vertex-primary text-white font-bold text-sm shadow-sm"
             >
               <span>{dict.nav.requestConsultation}</span>
               <ArrowUpRight className="w-4 h-4" />

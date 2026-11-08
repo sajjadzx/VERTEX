@@ -11,17 +11,21 @@ const config: Config = {
     extend: {
       colors: {
         vertex: {
-          navy: "#101923",
-          deep: "#0B1118",
-          surface: "#152230",
-          elevated: "#1C2B3C",
-          border: "#233547",
-          cyan: "#00C2B8",
-          cyanHover: "#00E0D4",
-          cyanDark: "#008A83",
-          steel: "#A9B7C4",
-          steelDark: "#6C7D8E",
-          ice: "#F4F7FA",
+          bg: "#F8FAFC", // Architectural Ice Slate
+          surface: "#FFFFFF", // Pure White
+          elevated: "#F1F5F9", // Crisp Light Aluminum
+          muted: "#E2E8F0", // Engineering CAD Line
+          border: "#E2E8F0", // Clean Border
+          borderStrong: "#CBD5E1",
+          primary: "#0F172A", // Deep Blueprint Slate for primary text
+          secondary: "#334155", // Technical Charcoal
+          steel: "#64748B", // Mechanical Gray
+          blueprint: "#0284C7", // Precision Blueprint Blue
+          blueprintDark: "#0369A1",
+          cyan: "#0EA5E9", // Technical Cyan
+          accent: "#2563EB", // International Cobalt
+          emerald: "#059669", // Certified Standard Green
+          amber: "#D97706",
         },
       },
       fontFamily: {
@@ -29,14 +33,14 @@ const config: Config = {
         vazir: ["var(--font-vazirmatn)", "sans-serif"],
       },
       boxShadow: {
-        cyan: "0 0 25px -5px rgba(0, 194, 184, 0.3)",
-        cyanLg: "0 0 45px -10px rgba(0, 194, 184, 0.4)",
-        glow: "0 0 20px rgba(0, 194, 184, 0.15)",
-        card: "0 10px 30px -10px rgba(0, 0, 0, 0.5)",
+        blueprint: "0 0 0 1px rgba(2, 132, 199, 0.15), 0 4px 20px -2px rgba(2, 132, 199, 0.08)",
+        card: "0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 10px 25px -5px rgba(15, 23, 42, 0.04)",
+        float: "0 20px 35px -10px rgba(15, 23, 42, 0.08)",
       },
       backgroundImage: {
-        "grid-pattern": "linear-gradient(to right, rgba(169, 183, 196, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(169, 183, 196, 0.05) 1px, transparent 1px)",
-        "dots-pattern": "radial-gradient(rgba(0, 194, 184, 0.15) 1px, transparent 1px)",
+        "cad-grid": "linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.12) 1px, transparent 1px)",
+        "cad-grid-dense": "linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px)",
+        "radial-light": "radial-gradient(circle at 50% 0%, rgba(2, 132, 199, 0.06) 0%, transparent 70%)",
       },
     },
   },
