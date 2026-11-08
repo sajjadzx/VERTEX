@@ -64,7 +64,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     1000: { sw: 2100, sd: 2100, cw: 1400, cd: 1600, op: 1000, ch: 2400, oh: 4400, pd: 1650 },
     1275: { sw: 2300, sd: 2300, cw: 1600, cd: 1800, op: 1100, ch: 2500, oh: 4600, pd: 1800 },
     1600: { sw: 2500, sd: 2700, cw: 1400, cd: 2400, op: 1300, ch: 2500, oh: 4800, pd: 2000 },
-  }[capacity as 450 | 630 | 800 | 1000 | 1275 | 1600] || {
+    2000: { sw: 2800, sd: 3000, cw: 1800, cd: 2500, op: 1500, ch: 2500, oh: 5000, pd: 2200 },
+  }[capacity as 450 | 630 | 800 | 1000 | 1275 | 1600 | 2000] || {
     sw: 2100, sd: 2100, cw: 1400, cd: 1600, op: 1000, ch: 2400, oh: 4400, pd: 1650
   };
 
@@ -610,8 +611,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
                 <span>{isFa ? "ظرفیت نامی مسافر (کیلوگرم):" : "Rated Load (kg):"}</span>
                 <span className="font-mono text-vertex-blueprint font-black">{capacity} kg</span>
               </label>
-              <div className="grid grid-cols-3 gap-1.5 text-xs font-mono">
-                {[450, 630, 800, 1000, 1275, 1600].map((cap) => (
+              <div className="grid grid-cols-4 gap-1.5 text-xs font-mono">
+                {[450, 630, 800, 1000, 1275, 1600, 2000].map((cap) => (
                   <button
                     key={cap}
                     onClick={() => setCapacity(cap)}
