@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Vazirmatn:wght@200;300;400;500;600;700;800;900&display=swap');
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
@@ -6,12 +7,37 @@
 
 :root {
   --font-inter: 'Inter', sans-serif;
-  --font-vazirmatn: 'Vazirmatn', sans-serif;
+  --font-vazirmatn: 'Vazirmatn', 'Tahoma', sans-serif;
 }
 
 html {
   scroll-behavior: smooth;
   color-scheme: light;
+}
+
+/* 100% Uniform Vazirmatn Font Enforcement in Persian */
+html[lang="fa"],
+html[lang="fa"] body,
+html[lang="fa"] input,
+html[lang="fa"] button,
+html[lang="fa"] select,
+html[lang="fa"] textarea,
+html[lang="fa"] table,
+html[lang="fa"] th,
+html[lang="fa"] td,
+html[lang="fa"] h1,
+html[lang="fa"] h2,
+html[lang="fa"] h3,
+html[lang="fa"] h4,
+html[lang="fa"] h5,
+html[lang="fa"] h6,
+html[lang="fa"] p,
+html[lang="fa"] span,
+html[lang="fa"] a,
+html[lang="fa"] div,
+[dir="rtl"],
+[dir="rtl"] * {
+  font-family: 'Vazirmatn', var(--font-vazirmatn), system-ui, -apple-system, sans-serif !important;
 }
 
 body {
@@ -56,24 +82,20 @@ body {
     linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
 }
 
-/* Architectural dimension line markings */
-.dimension-line {
-  position: relative;
+/* Leaflet map styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  z-index: 10;
 }
-.dimension-line::before,
-.dimension-line::after {
-  content: '';
-  position: absolute;
-  background-color: #0284C7;
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+  padding: 0;
+  overflow: hidden;
 }
-
-/* Precision Sensor / Pulse */
-@keyframes cadence-pulse {
-  0% { transform: scale(0.96); opacity: 0.7; }
-  50% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(0.96); opacity: 0.7; }
-}
-
-.animate-cadence {
-  animation: cadence-pulse 2s infinite ease-in-out;
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.5;
 }

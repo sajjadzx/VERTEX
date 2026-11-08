@@ -10,6 +10,8 @@ import { ElevatorAnatomy } from "@/components/ElevatorAnatomy";
 import { EscalatorExplorer } from "@/components/EscalatorExplorer";
 import { MaintenanceDashboard } from "@/components/MaintenanceDashboard";
 import { ConsultationWizard } from "@/components/ConsultationWizard";
+import { ThreeCADShaftViewer } from "@/components/ThreeCADShaftViewer";
+import { ProjectWorldMap } from "@/components/ProjectWorldMap";
 import { CADBlueprintShaft } from "@/components/CADBlueprintShaft";
 import { TractionCalculator } from "@/components/TractionCalculator";
 import { SHOWCASE_PROJECTS } from "@/lib/constants";
@@ -157,7 +159,7 @@ export default async function HomePage({
               : "Interactive plan and vertical cross-sections with live dimension callouts and technician refuge volumes."
           }
         />
-        <CADBlueprintShaft locale={currentLocale} />
+        <div className="space-y-8"><ThreeCADShaftViewer locale={currentLocale} /><CADBlueprintShaft locale={currentLocale} /></div>
       </section>
 
       {/* ========================================================
@@ -356,6 +358,7 @@ export default async function HomePage({
           </NextLink>
         </div>
 
+        <div className="mb-10"><ProjectWorldMap locale={currentLocale} /></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {SHOWCASE_PROJECTS.slice(0, 3).map((p) => (
             <div

@@ -1,4 +1,3 @@
-import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import type { Metadata } from "next";
 import NextLink from "next/link";
@@ -6,9 +5,11 @@ import { Locale, dictionary } from "@/lib/dictionary";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TechBadge } from "@/components/TechBadge";
 import { ElevatorAnatomy } from "@/components/ElevatorAnatomy";
+import { ThreeCADShaftViewer } from "@/components/ThreeCADShaftViewer";
 import { CADBlueprintShaft } from "@/components/CADBlueprintShaft";
 import { TractionCalculator } from "@/components/TractionCalculator";
-import { Cpu, Zap, Activity, ShieldCheck, ArrowUpRight, Gauge, Layers } from "lucide-react";
+import { PageInterconnect } from "@/components/PageInterconnect";
+import { Cpu, Zap, Activity, ShieldCheck, ArrowUpRight, Gauge, Layers, Box } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -80,13 +81,48 @@ export default async function EngineeringPage({
         ))}
       </div>
 
-      {/* Embedded CAD Blueprint Shaft Component */}
-      <div className="pt-4">
+      {/* Three.js 3D WebGL CAD Shaft Studio */}
+      <div className="pt-4 space-y-4">
+        <SectionHeader
+          align="left"
+          badge={isFa ? "موتور سه‌بعدی محاسبات چاه" : "THREE.JS 3D CAD ENGINE"}
+          title={isFa ? "استودیوی سه‌بعدی وکتوری و مدل‌سازی چاه آسانسور" : "Interactive 3D WebGL Parametric Shaft Model"}
+          subtitle={
+            isFa 
+              ? "مدل‌سازی زنده اجزای سازه‌ای چاه: آهن‌کشی، تیرریزی، ریل‌های T-Section، کادر وزنه تعادل، فضاهای جان‌پناه و ضربه‌گیرهای هیدرولیک."
+              : "Real-time 3D parametric visualization of shaft steel beams, counterweight sling, refuge safety cubes, and pit buffer kinematics."
+          }
+        />
+        <ThreeCADShaftViewer locale={currentLocale} />
+      </div>
+
+      {/* Embedded 2D CAD Blueprint Shaft Component */}
+      <div className="pt-4 space-y-4">
+        <SectionHeader
+          align="left"
+          badge={isFa ? "پلان و مقطع معماری" : "2D ARCHITECTURAL BLUEPRINTS"}
+          title={isFa ? "دیمانسیون و نقشه‌کشی ۲ بعدی چاه (مبحث ۱۵ ایران)" : "2D Orthographic CAD Blueprint Dimensioner"}
+          subtitle={
+            isFa 
+              ? "برش مقطع و پلان افقی چاه با اندازه‌گذاری‌های استاندارد، فواصل درها و محدوده چاهک."
+              : "Plan and section orthographic callouts conforming to ISO 8100-32 and national building codes."
+          }
+        />
         <CADBlueprintShaft locale={currentLocale} />
       </div>
 
       {/* Embedded Traction Kinematic Calculator */}
-      <div className="pt-4">
+      <div className="pt-4 space-y-4">
+        <SectionHeader
+          align="left"
+          badge={isFa ? "محاسبات فنی درایو و موتور" : "KINEMATICS & ELECTRICAL"}
+          title={isFa ? "ماشین‌حساب مهندسی توان، گشتاور و اصطکاک کششی" : "Traction Kinematics & Euler-Eytelwein Engine"}
+          subtitle={
+            isFa 
+              ? "محاسبه زنده توان الکتروموتور گیرلس، گشتاور نامی شفت، جرم وزنه تعادل و کنترل شرایط اصطکاک عدم لغزش."
+              : "Live calculation of motor shaft kW power, torque, counterweight mass, and rope traction safety factors."
+          }
+        />
         <TractionCalculator locale={currentLocale} />
       </div>
 
@@ -111,41 +147,30 @@ export default async function EngineeringPage({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs font-mono">
           <div className="p-5 rounded-xl bg-vertex-elevated border border-vertex-border">
             <span className="text-vertex-steel text-[11px] block font-semibold">
-              {isFa ? "بیشینه شتاب جانبی (X/Y Peak-to-Peak)" : "Lateral Vibration Peak-to-Peak"}
+              {isFa ? "بیشینه شتاب جانبی (X/Y Peak-to-Peak)" : "Lateral Vibration Peak"}
             </span>
-            <span className="text-2xl font-black text-vertex-blueprint mt-2 block">
-              &lt; 0.12 m/s²
-            </span>
-            <span className="text-vertex-secondary text-[10px] mt-1 block">
-              ISO 18738 Class A benchmark
-            </span>
+            <span className="text-2xl font-black text-vertex-blueprint mt-2 block">&lt; 0.12 m/s²</span>
+            <span className="text-vertex-secondary text-[10px] mt-1 block">ISO 18738 Class A benchmark</span>
           </div>
 
           <div className="p-5 rounded-xl bg-vertex-elevated border border-vertex-border">
             <span className="text-vertex-steel text-[11px] block font-semibold">
-              {isFa ? "شتاب کاهنده ترمز ایمنی" : "Controlled Deceleration Rate"}
+              {isFa ? "شتاب کاهنده ترمز ایمنی" : "Safety Gear Deceleration"}
             </span>
-            <span className="text-2xl font-black text-vertex-primary mt-2 block">
-              0.2g – 1.0g
-            </span>
-            <span className="text-vertex-secondary text-[10px] mt-1 block">
-              EN 81-20 § 5.6.3 strictly enforced
-            </span>
+            <span className="text-2xl font-black text-vertex-primary mt-2 block">0.2g – 1.0g</span>
+            <span className="text-vertex-secondary text-[10px] mt-1 block">EN 81-20 § 5.6.3 strictly enforced</span>
           </div>
 
           <div className="p-5 rounded-xl bg-vertex-elevated border border-vertex-border">
             <span className="text-vertex-steel text-[11px] block font-semibold">
-              {isFa ? "آکوستیک صوتی در سرعت بیشینه" : "In-Cabin Sound Pressure"}
+              {isFa ? "آکوستیک صوتی در سرعت بیشینه" : "In-Cabin Max Acoustic"}
             </span>
-            <span className="text-2xl font-black text-emerald-700 mt-2 block">
-              &lt; 42 dBA
-            </span>
-            <span className="text-vertex-secondary text-[10px] mt-1 block">
-              Acoustic aerodynamic shroud
-            </span>
+            <span className="text-2xl font-black text-emerald-700 mt-2 block">&lt; 42 dBA</span>
+            <span className="text-vertex-secondary text-[10px] mt-1 block">Acoustic aerodynamic shroud</span>
           </div>
         </div>
       </div>
+
       <PageInterconnect locale={currentLocale} />
     </div>
   );

@@ -1,11 +1,12 @@
 "use client";
 
-import { PageInterconnect } from "@/components/PageInterconnect";
 import React, { useState, use } from "react";
 import Image from "next/image";
 import { Locale, dictionary } from "@/lib/dictionary";
 import { SHOWCASE_PROJECTS, ProjectItem } from "@/lib/constants";
 import { TechBadge } from "@/components/TechBadge";
+import { ProjectWorldMap } from "@/components/ProjectWorldMap";
+import { PageInterconnect } from "@/components/PageInterconnect";
 import { ShieldAlert, ArrowUpRight, Building2, MapPin } from "lucide-react";
 
 export default function ProjectsPage({
@@ -46,8 +47,13 @@ export default function ProjectsPage({
         </div>
       </div>
 
+      {/* Leaflet GIS Interactive Project Map */}
+      <div className="pt-2">
+        <ProjectWorldMap locale={currentLocale} />
+      </div>
+
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-6">
         {[
           { id: "all", label: dict.projects.all },
           { id: "commercial", label: dict.projects.commercial },
@@ -75,53 +81,48 @@ export default function ProjectsPage({
             key={p.id}
             className="group rounded-2xl bg-white border border-vertex-border overflow-hidden hover:border-vertex-blueprint transition-all duration-300 shadow-card flex flex-col justify-between"
           >
-            <div className="relative w-full aspect-[16/11] bg-slate-100 overflow-hidden">
-              <Image
-                src={p.image}
-                alt={isFa ? p.titleFa : p.titleEn}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute top-3 left-3 px-2.5 py-1 rounded bg-white/95 backdrop-blur-sm border border-slate-200 text-[11px] font-mono font-bold text-vertex-blueprint">
-                {p.speed}
+            <div>
+              <div className="relative w-full aspect-[16/10] bg-slate-100 overflow-hidden">
+                <Image
+                  src={p.image}
+                  alt={isFa ? p.titleFa : p.titleEn}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-lg bg-white/95 backdrop-blur-sm border border-vertex-border text-xs font-mono font-bold text-vertex-blueprint shadow-sm">
+                  {p.speed}
+                </div>
+                <div className="absolute bottom-3 right-3 px-2.5 py-0.5 rounded bg-slate-900/80 backdrop-blur-sm text-[10px] font-mono text-white">
+                  {p.category.toUpperCase()}
+                </div>
               </div>
-            </div>
 
-            <div className="p-6 flex-1 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-1.5 text-xs text-vertex-steel font-mono font-bold">
-                  <MapPin className="w-3.5 h-3.5 text-vertex-blueprint shrink-0" />
+              <div className="p-6 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-mono text-vertex-steel font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-vertex-blueprint" />
                   <span>{isFa ? p.locationFa : p.locationEn}</span>
                 </div>
 
-                <h3 className="text-xl font-black font-mono text-vertex-primary mt-2 group-hover:text-vertex-blueprint transition-colors">
+                <h3 className="text-xl font-black font-mono text-vertex-primary leading-tight">
                   {isFa ? p.titleFa : p.titleEn}
                 </h3>
 
-                <p className="text-xs text-vertex-secondary mt-2 font-normal">
+                <div className="pt-2 text-xs font-mono text-vertex-steel">
+                  <span className="font-semibold text-vertex-primary">{isFa ? "واحدهای بالابر: " : "Units: "}</span>
                   {p.units}
-                </p>
+                </div>
               </div>
+            </div>
 
-              <div className="mt-6 pt-4 border-t border-vertex-border grid grid-cols-2 gap-4 text-xs font-mono text-vertex-steel font-bold">
-                <div>
-                  <span className="text-[10px] text-vertex-steel/80 block">
-                    {isFa ? "طبقات سازه:" : "Building Levels:"}
-                  </span>
-                  <span className="text-vertex-primary">{p.floors} Levels</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-vertex-steel/80 block">
-                    {isFa ? "ارتفاع کل:" : "Total Height:"}
-                  </span>
-                  <span className="text-vertex-blueprint">{p.height}</span>
-                </div>
-              </div>
+            <div className="p-6 pt-0 border-t border-vertex-border/60 mt-4 flex items-center justify-between text-xs font-mono text-vertex-steel font-bold">
+              <span>{p.floors} {isFa ? "طبقه" : "Floors"}</span>
+              <span className="text-vertex-blueprint">{p.height}</span>
             </div>
           </div>
         ))}
       </div>
+
       <PageInterconnect locale={currentLocale} />
     </div>
   );
