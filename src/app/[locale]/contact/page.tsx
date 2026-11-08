@@ -1,5 +1,6 @@
 "use client";
 
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React, { useState, use } from "react";
 import { Locale, dictionary } from "@/lib/dictionary";
 import { TechBadge } from "@/components/TechBadge";
@@ -251,6 +252,7 @@ export default function ContactPage({
           ))}
         </div>
       </div>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }

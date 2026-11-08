@@ -1,3 +1,4 @@
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import type { Metadata } from "next";
 import NextLink from "next/link";
@@ -145,6 +146,7 @@ export default async function EngineeringPage({
           </div>
         </div>
       </div>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }

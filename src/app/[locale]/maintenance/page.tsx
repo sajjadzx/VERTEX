@@ -1,3 +1,4 @@
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import type { Metadata } from "next";
 import { Locale, dictionary } from "@/lib/dictionary";
@@ -108,6 +109,7 @@ export default async function MaintenancePage({
           ))}
         </div>
       </div>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }

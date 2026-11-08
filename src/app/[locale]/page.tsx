@@ -1,3 +1,4 @@
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import NextLink from "next/link";
 import Image from "next/image";
@@ -418,6 +419,7 @@ export default async function HomePage({
         />
         <ConsultationWizard locale={currentLocale} />
       </section>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }

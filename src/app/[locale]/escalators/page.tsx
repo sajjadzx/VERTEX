@@ -1,3 +1,4 @@
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import type { Metadata } from "next";
 import NextLink from "next/link";
@@ -143,6 +144,7 @@ export default async function EscalatorsPage({
           {isFa ? "مشاوره ترافیک مسافری" : "Consult Transit Engineers"}
         </NextLink>
       </div>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }

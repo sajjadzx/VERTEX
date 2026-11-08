@@ -1,3 +1,4 @@
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import type { Metadata } from "next";
 import NextLink from "next/link";
@@ -217,6 +218,7 @@ export default async function ElevatorsPage({
       <div className="pt-4">
         <ElevatorAnatomy locale={currentLocale} />
       </div>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }

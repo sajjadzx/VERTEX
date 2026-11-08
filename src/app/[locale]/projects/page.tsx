@@ -1,5 +1,6 @@
 "use client";
 
+import { PageInterconnect } from "@/components/PageInterconnect";
 import React, { useState, use } from "react";
 import Image from "next/image";
 import { Locale, dictionary } from "@/lib/dictionary";
@@ -121,6 +122,7 @@ export default function ProjectsPage({
           </div>
         ))}
       </div>
+      <PageInterconnect locale={currentLocale} />
     </div>
   );
 }
