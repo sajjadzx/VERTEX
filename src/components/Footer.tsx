@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Clock,
   FileCode,
-  Compass
+  Compass,
+  DoorClosed
 } from "lucide-react";
 
 interface FooterProps {
@@ -35,10 +36,10 @@ export function Footer({ locale }: FooterProps) {
   };
 
   const certifications = [
+    { code: "استاندارد ملی ۶۳۰۳", labelFa: "مقررات ایمنی ساخت و نصب آسانسور", labelEn: "ISIRI 6303-1 / 6303-2 Safety Code" },
     { code: "EN 81-20 / 50", labelFa: "استاندارد ایمنی بالابرهای مسافری", labelEn: "Passenger Lift Safety Norms" },
+    { code: "مبحث ۱۵ مقررات ملی", labelFa: "طراحی و اجرای آسانسورهای ایران", labelEn: "Iranian National Building Code Art. 15" },
     { code: "EN 115-1:2017", labelFa: "استاندارد ایمنی پله‌برقی و پیاده‌رو", labelEn: "Escalator & Autowalk Standard" },
-    { code: "مبحث ۱۵ مقررات ملی", labelFa: "طراحی و اجرای آسانسورهای ایران", labelEn: "Iranian National Building Code" },
-    { code: "ISO 25745 Class A+++", labelFa: "بالاترین تراز بهره‌وری انرژی", labelEn: "Top Energy Efficiency Benchmark" },
   ];
 
   return (
@@ -63,8 +64,8 @@ export function Footer({ locale }: FooterProps) {
             
             <p className="text-xs sm:text-sm text-vertex-secondary leading-relaxed font-normal max-w-sm">
               {isFa 
-                ? "طراحی، مهندسی و اجرای پیشرفته‌ترین سیستم‌های ترابری عمودی، آسانسورهای پرسرعت برج‌ها، بالابرهای بدون موتورخانه (MRL) و پله‌برقی‌های سنگین شهری منطبق با استانداردهای EN و مبحث ۱۵."
-                : "Advanced vertical mobility solutions, high-speed elevators, gearless MRL systems, and heavy-duty transit escalators engineered for architectural excellence."}
+                ? "طراحی، مهندسی و اجرای پیشرفته‌ترین سیستم‌های ترابری عمودی، آسانسورهای پرسرعت برج‌ها، بالابرهای بدون موتورخانه (MRL) و پله‌برقی‌های سنگین شهری منطبق با استاندارد ملی ایران شماره ۶۳۰۳، EN 81-20 و مبحث ۱۵."
+                : "Advanced vertical mobility solutions, high-speed elevators, gearless MRL systems, and heavy-duty transit escalators engineered for architectural excellence and ISIRI 6303 / EN 81 compliance."}
             </p>
 
             {/* Certifications Grid */}
@@ -96,13 +97,14 @@ export function Footer({ locale }: FooterProps) {
               <li>
                 <NextLink href={`/${locale}/elevators`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
                   <span className="w-1 h-1 rounded-full bg-vertex-steel group-hover:bg-vertex-blueprint group-hover:scale-125 transition-all" />
-                  <span>{isFa ? "آسانسورهای بدون موتورخانه" : "MRL Gearless Lifts"}</span>
+                  <span>{isFa ? "آسانسورهای بدون موتورخانه MRL" : "MRL Gearless Lifts"}</span>
                 </NextLink>
               </li>
               <li>
                 <NextLink href={`/${locale}/elevators`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
                   <span className="w-1 h-1 rounded-full bg-vertex-steel group-hover:bg-vertex-blueprint group-hover:scale-125 transition-all" />
-                  <span>{isFa ? "بالابرهای بیمارستانی تخت‌بر" : "Stretcher Bed Lifts"}</span>
+                  <span>{isFa ? "راهنمای درب‌های رایج ایران" : "Iranian Elevator Doors"}</span>
+                  <span className="text-[9px] font-mono px-1 rounded bg-emerald-100 text-emerald-800 font-bold">۶۳۰۳</span>
                 </NextLink>
               </li>
               <li>
@@ -124,14 +126,21 @@ export function Footer({ locale }: FooterProps) {
           <div className="space-y-3">
             <h4 className="text-xs font-mono uppercase tracking-wider text-vertex-primary font-bold flex items-center gap-2">
               <Cpu className="w-4 h-4 text-vertex-blueprint" />
-              <span>{isFa ? "ابزارهای مهندسی CAD" : "CAD & Engineering"}</span>
+              <span>{isFa ? "استودیوی مهندسی CAD" : "CAD & Engineering"}</span>
             </h4>
             <ul className="space-y-2 text-xs font-medium">
               <li>
                 <NextLink href={`/${locale}/engineering`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
                   <span className="w-1 h-1 rounded-full bg-vertex-steel group-hover:bg-vertex-blueprint group-hover:scale-125 transition-all" />
-                  <span>{isFa ? "مدل ۳ بعدی و نقشه‌های چاه" : "3D CAD Shaft Studio"}</span>
-                  <span className="text-[9px] font-mono px-1 rounded bg-sky-100 text-vertex-blueprint font-bold">3D</span>
+                  <span>{isFa ? "نقشه‌های لیفت‌دیزاینر چاه" : "LiftDesigner CAD Studio"}</span>
+                  <span className="text-[9px] font-mono px-1 rounded bg-sky-100 text-vertex-blueprint font-bold">DWG</span>
+                </NextLink>
+              </li>
+              <li>
+                <NextLink href={`/${locale}/engineering`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
+                  <span className="w-1 h-1 rounded-full bg-vertex-steel group-hover:bg-vertex-blueprint group-hover:scale-125 transition-all" />
+                  <span>{isFa ? "مدل ۳ بعدی Three.js چاه" : "3D WebGL Shaft Model"}</span>
+                  <span className="text-[9px] font-mono px-1 rounded bg-purple-100 text-purple-800 font-bold">3D</span>
                 </NextLink>
               </li>
               <li>
@@ -147,15 +156,9 @@ export function Footer({ locale }: FooterProps) {
                 </NextLink>
               </li>
               <li>
-                <NextLink href={`/${locale}/maintenance`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
+                <NextLink href={`/${locale}/projects`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
                   <span className="w-1 h-1 rounded-full bg-vertex-steel group-hover:bg-vertex-blueprint group-hover:scale-125 transition-all" />
-                  <span>{isFa ? "داشبورد پایش تلمتری IoT" : "Telemetry Dashboard"}</span>
-                </NextLink>
-              </li>
-              <li>
-                <NextLink href={`/${locale}/contact`} className="hover:text-vertex-blueprint transition-colors flex items-center gap-1.5 group">
-                  <span className="w-1 h-1 rounded-full bg-vertex-steel group-hover:bg-vertex-blueprint group-hover:scale-125 transition-all" />
-                  <span>{isFa ? "ویزارد ترافیک CIBSE" : "Traffic Sizing Wizard"}</span>
+                  <span>{isFa ? "نقشه تعاملی پروژه‌ها (Leaflet)" : "Project GIS Map"}</span>
                 </NextLink>
               </li>
             </ul>
@@ -193,7 +196,7 @@ export function Footer({ locale }: FooterProps) {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-700 font-mono font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              <span>{isFa ? "سیستم‌های پایش فعال (100% Operational)" : "All Systems Operational"}</span>
+              <span>{isFa ? "سامانه‌ها فعال منطبق با استاندارد ۶۳۰۳" : "ISIRI 6303 Fully Certified"}</span>
             </span>
             <span className="hidden sm:inline">|</span>
             <span className="font-mono">© {new Date().getFullYear()} VERTEX Technologies.</span>

@@ -1,4 +1,3 @@
-import { PageInterconnect } from "@/components/PageInterconnect";
 import React from "react";
 import type { Metadata } from "next";
 import NextLink from "next/link";
@@ -6,8 +5,9 @@ import { Locale, dictionary } from "@/lib/dictionary";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TechBadge } from "@/components/TechBadge";
 import { ElevatorAnatomy } from "@/components/ElevatorAnatomy";
-import { CADBlueprintShaft } from "@/components/CADBlueprintShaft";
-import { Check, ArrowUpRight, Sliders, Ruler } from "lucide-react";
+import { IranElevatorDoors } from "@/components/IranElevatorDoors";
+import { PageInterconnect } from "@/components/PageInterconnect";
+import { Check, ArrowUpRight, Sliders, Ruler, ShieldCheck, DoorClosed } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -47,38 +47,38 @@ export default async function ElevatorsPage({
     {
       model: "VERTEX Horizon MRL",
       typeEn: "Machine Room-Less Architectural",
-      typeFa: "بدون موتورخانه لوکس شهری",
-      speed: "1.0 – 2.5 m/s",
-      capacity: "450 – 1,600 kg",
-      maxRise: "90 m",
-      drive: "Compact Overhead PMSM",
+      typeFa: "بدون موتورخانه لوکس شهری (MRL)",
+      speed: "1.0 – 3.0 m/s",
+      capacity: "630 – 1,600 kg",
+      maxRise: "120 m",
+      drive: "Permanent Magnet Gearless",
       noise: "< 45 dBA",
     },
     {
-      model: "VERTEX Vista Crystal",
-      typeEn: "Panoramic Glass Luxury Atrium",
-      typeFa: "پانوراما شیشه‌ای آتریوم و هتل",
-      speed: "1.6 – 4.0 m/s",
-      capacity: "800 – 2,000 kg",
-      maxRise: "180 m",
-      drive: "Underslung Quiet Traction",
-      noise: "< 44 dBA",
+      model: "VERTEX Aero Transit",
+      typeEn: "High-Capacity Double-Deck",
+      typeFa: "دوکابینه ترابری پرتردد فرودگاهی",
+      speed: "4.0 – 7.0 m/s",
+      capacity: "2 × 1,800 kg",
+      maxRise: "300 m",
+      drive: "Permanent Magnet Synchronous",
+      noise: "< 48 dBA",
     },
     {
-      model: "VERTEX Titan Heavy",
-      typeEn: "Industrial Heavy Freight & Cargo",
-      typeFa: "باربری و صنعتی فوق سنگین",
-      speed: "0.5 – 1.5 m/s",
-      capacity: "2,000 – 10,000 kg",
-      maxRise: "60 m",
-      drive: "High-Torque 2:1 / 4:1 Traction",
-      noise: "< 55 dBA",
+      model: "VERTEX MediCare 1600",
+      typeEn: "Hospital Stretcher & Medical",
+      typeFa: "تخت‌بر بیمارستانی و مراکز جراحی",
+      speed: "1.6 – 2.5 m/s",
+      capacity: "1,600 – 2,000 kg",
+      maxRise: "80 m",
+      drive: "Gearless Variable Frequency",
+      noise: "< 40 dBA",
     },
   ];
 
   return (
     <div className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-20 bg-vertex-bg">
-      {/* Page Header */}
+      {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <TechBadge variant="blueprint">{dict.elevators.badge}</TechBadge>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-vertex-primary font-mono tracking-tight">
@@ -87,106 +87,94 @@ export default async function ElevatorsPage({
         <p className="text-base sm:text-lg text-vertex-secondary font-normal leading-relaxed">
           {dict.elevators.subtitle}
         </p>
+
+        {/* Standard 6303 Pill */}
+        <div className="inline-flex items-center gap-2 p-2 px-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-900">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>
+            {isFa 
+              ? "انطباق ۱۰۰٪ با مقررات ایمنی استاندارد ملی ایران شماره ۶۳۰۳-۱ و ۶۳۰۳-۲ و مبحث ۱۵ مقررات ملی" 
+              : "Full conformity to ISIRI 6303-1 / 6303-2 and EN 81-20/50 safety regulations."}
+          </span>
+        </div>
       </div>
 
-      {/* Solutions Cards Grid */}
+      {/* Solutions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {dict.elevators.categories.map((cat) => (
+        {dict.elevators.categories.map((item, idx) => (
           <div
-            key={cat.id}
-            className="rounded-2xl bg-white border border-vertex-border p-8 hover:border-vertex-blueprint transition-all shadow-card flex flex-col justify-between"
+            key={idx}
+            className="rounded-2xl bg-white border border-vertex-border p-8 hover:border-vertex-blueprint transition-all duration-300 shadow-card flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-vertex-border">
                 <span className="text-xs font-mono font-bold text-vertex-blueprint uppercase tracking-wider">
-                  SERIES {cat.id.toUpperCase()}
+                  SERIES 0{idx + 1}
                 </span>
-                <span className="text-xs font-mono font-bold text-vertex-primary bg-slate-100 px-3 py-1 rounded border border-slate-200">
-                  {cat.speed}
-                </span>
+                <span className="w-2.5 h-2.5 rounded-full bg-vertex-blueprint" />
               </div>
 
-              <h2 className="text-2xl font-black font-mono text-vertex-primary mt-4">
-                {cat.name}
+              <h2 className="text-2xl sm:text-3xl font-black font-mono text-vertex-primary mt-4">
+                {item.name}
               </h2>
-              <p className="text-sm text-vertex-secondary font-normal mt-2 leading-relaxed">
-                {cat.desc}
+
+              <p className="text-sm text-vertex-secondary font-normal mt-3 leading-relaxed">
+                {item.desc}
               </p>
 
-              {/* Technical Badges */}
-              <div className="grid grid-cols-2 gap-3 mt-6 text-xs font-mono">
-                <div className="p-3 rounded-lg bg-vertex-elevated border border-vertex-border">
-                  <span className="text-vertex-steel text-[10px] block font-semibold">
-                    {isFa ? "ظرفیت نامی:" : "Rated Capacity:"}
-                  </span>
-                  <span className="text-vertex-primary font-black">{cat.capacity}</span>
-                </div>
-                <div className="p-3 rounded-lg bg-vertex-elevated border border-vertex-border">
-                  <span className="text-vertex-steel text-[10px] block font-semibold">
-                    {isFa ? "حداکثر ارتفاع:" : "Max Travel Height:"}
-                  </span>
-                  <span className="text-vertex-primary font-black">{cat.travel}</span>
-                </div>
+              <div className="mt-8 space-y-3">
+                <span className="text-xs font-mono uppercase tracking-wider text-vertex-steel font-bold block">
+                  {isFa ? "مشخصات فنی و استانداردها" : "Engineered Specifications"}
+                </span>
+                <ul className="space-y-2">
+                  {item.specs.map((spec, sIdx) => (
+                    <li
+                      key={sIdx}
+                      className="flex items-center gap-2 text-xs font-mono text-vertex-primary font-medium"
+                    >
+                      <Check className="w-3.5 h-3.5 text-vertex-blueprint shrink-0" />
+                      <span>{spec}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Key Specs checklist */}
-              <ul className="mt-6 space-y-2">
-                {cat.specs.map((sp, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-2 text-xs font-mono text-vertex-secondary"
-                  >
-                    <Check className="w-4 h-4 text-vertex-blueprint shrink-0" />
-                    <span>{sp}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-vertex-border flex items-center justify-between">
-              <NextLink
-                href={`/${currentLocale}/configurator`}
-                className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-vertex-blueprint hover:underline"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>{isFa ? "شخصی‌سازی کابین" : "Customize Cabin"}</span>
-              </NextLink>
-
+            <div className="mt-8 pt-4 border-t border-vertex-border flex items-center justify-between">
+              <span className="text-xs font-mono text-vertex-steel">
+                {isFa ? "تأییدیه ISIRI 6303" : "ISIRI 6303 Certified"}
+              </span>
               <NextLink
                 href={`/${currentLocale}/contact`}
-                className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-vertex-primary hover:text-vertex-blueprint"
+                className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-vertex-blueprint hover:underline"
               >
-                <span>{isFa ? "استعلام مشخصات مهندسی" : "Request Spec Sheet"}</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>{isFa ? "استعلام مشخصات فنی" : "Request Spec Sheet"}</span>
+                <ArrowUpRight className="w-4 h-4" />
               </NextLink>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Embedded CAD Blueprint Shaft Component */}
-      <div className="pt-4">
-        <CADBlueprintShaft locale={currentLocale} />
-      </div>
-
-      {/* Engineering Specification Matrix Table */}
-      <div className="space-y-6 pt-6">
+      {/* Technical Comparison Matrix */}
+      <div className="rounded-2xl bg-white border border-vertex-border p-6 sm:p-8 shadow-card space-y-6">
         <SectionHeader
-          badge={isFa ? "داده‌های متالورژی و سینماتیک" : "KINEMATICS MATRIX"}
-          title={dict.elevators.techSpecsTitle}
+          align="left"
+          badge={isFa ? "جدول ماتریس مهندسی" : "ENGINEERING MATRIX"}
+          title={isFa ? "مقایسه مشخصات فنی مدل‌های آسانسور VERTEX" : "Elevator Engineering Comparison"}
           subtitle={
             isFa
-              ? "مقایسه مشخصات سرعت، ظرفیت، سیستم محرک و سطوح ارتعاش صوتی مدل‌های مختلف ورتکس."
-              : "Comparative mechanical engineering parameters across VERTEX elevator architectures."
+              ? "پارامترهای سرعت، ظرفیت باربری، ارتفاع مسیر و نوع درایو بر اساس استانداردهای EN 81-20 و استاندارد ملی ۶۳۰۳."
+              : "Rated parameters and drive subsystems benchmarked against international vertical transportation standards."
           }
         />
 
-        <div className="rounded-xl border border-vertex-border bg-white overflow-x-auto shadow-sm">
-          <table className="w-full text-left text-xs font-mono border-collapse min-w-[700px]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-mono text-xs border-collapse">
             <thead>
-              <tr className="border-b border-vertex-border text-vertex-steel uppercase bg-vertex-elevated">
-                <th className="py-4 px-4">{isFa ? "مدل / معماری" : "Model / Architecture"}</th>
-                <th className="py-4 px-4">{isFa ? "سرعت نامی" : "Velocity"}</th>
+              <tr className="border-b border-vertex-borderStrong text-vertex-steel uppercase tracking-wider bg-slate-50">
+                <th className="py-4 px-4">{isFa ? "مدل سیستم" : "System Model"}</th>
+                <th className="py-4 px-4">{isFa ? "سرعت نامی" : "Rated Speed"}</th>
                 <th className="py-4 px-4">{isFa ? "ظرفیت باربری" : "Capacity"}</th>
                 <th className="py-4 px-4">{isFa ? "حداکثر ارتفاع" : "Max Rise"}</th>
                 <th className="py-4 px-4">{isFa ? "نوع موتور و درایو" : "Drive Subsystem"}</th>
@@ -214,10 +202,16 @@ export default async function ElevatorsPage({
         </div>
       </div>
 
+      {/* Iranian Elevator Doors Engineering Reference */}
+      <div className="pt-4">
+        <IranElevatorDoors locale={currentLocale} />
+      </div>
+
       {/* Embedded Elevator Anatomy Component */}
       <div className="pt-4">
         <ElevatorAnatomy locale={currentLocale} />
       </div>
+
       <PageInterconnect locale={currentLocale} />
     </div>
   );
