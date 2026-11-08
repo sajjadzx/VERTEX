@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+
+Sitemap: https://sajjadzx.github.io/VERTEX/sitemap.xml
