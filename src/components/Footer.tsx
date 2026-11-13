@@ -192,15 +192,55 @@ export function Footer({ locale }: FooterProps) {
           </div>
         </div>
 
+        {/* Creator / Developer Attribution Banner */}
+        <div className="mt-10 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col md:flex-row items-center justify-between gap-5 border border-slate-700/80 shadow-lg">
+          <div className="flex items-center gap-4 text-right">
+            <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 shadow-inner shrink-0">
+              <Cpu className="w-6 h-6 text-sky-400" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-slate-400 font-mono">
+                  {isFa ? "طرح و برنامه‌نویس:" : "Architect & Developer:"}
+                </span>
+                <span className="text-base font-bold text-white tracking-wide">
+                  {isFa ? "سید سجاد طباطبایی" : "Seyed Sajjad Tabatabaei"}
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
+                  {isFa ? "طراح و توسعه‌دهنده سیستم" : "Lead Engineer"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                {isFa 
+                  ? "طراحی و برنامه‌نویسی تخصصی استودیوی آنلاین لیفت‌دیزاینر، موتور سه‌بعدی محاسبات چاه و سامانه‌های ترابری عمودی VERTEX"
+                  : "Lead System Architect of VERTEX CAD Studio, 3D WebGL Kinematics Engine & Vertical Mobility"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href="tel:09013356283"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md hover:shadow-lg group"
+            >
+              <Phone className="w-4 h-4 text-slate-950 group-hover:scale-110 transition-transform" />
+              <span className="font-mono font-black text-sm tracking-widest" dir="ltr">09013356283</span>
+              <span className="text-xs text-slate-900 font-normal">({isFa ? "تماس مستقیم" : "Call"})</span>
+            </a>
+          </div>
+        </div>
+
         {/* Bottom Bar: Copyright, System Status & Back to Top */}
-        <div className="mt-12 pt-6 border-t border-vertex-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-vertex-steel">
+        <div className="mt-8 pt-6 border-t border-vertex-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-vertex-steel">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-700 font-mono font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
               <span>{isFa ? "سامانه‌ها فعال منطبق با استاندارد ۶۳۰۳" : "ISIRI 6303 Fully Certified"}</span>
             </span>
             <span className="hidden sm:inline">|</span>
-            <span className="font-mono">© {new Date().getFullYear()} VERTEX Technologies.</span>
+            <span className="font-mono">
+              © {new Date().getFullYear()} VERTEX Technologies | {isFa ? "طرح و برنامه‌نویس: سید سجاد طباطبایی (۰۹۰۱۳۳۵۶۲۸۳)" : "Designed & Developed by Seyed Sajjad Tabatabaei (+98 901 335 6283)"}
+            </span>
           </div>
 
           <button

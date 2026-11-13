@@ -1334,6 +1334,24 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
               <span>{copiedDxf ? (isFa ? "کپی شد!" : "Copied!") : (isFa ? "خروجی لایه DXF" : "Export DXF")}</span>
             </button>
           </div>
+
+          {/* Engineering CAD Title Block (جدول مشخصات مهندسی نقشه) */}
+          <div className="absolute bottom-4 right-4 z-20 hidden md:block p-3 rounded-xl bg-white/95 backdrop-blur-md border border-vertex-border shadow-sm text-xs font-mono max-w-xs">
+            <div className="text-[10px] text-vertex-steel uppercase tracking-wider font-bold border-b border-vertex-border pb-1 mb-1.5 flex items-center justify-between">
+              <span>VERTEX CAD TITLE BLOCK</span>
+              <span className="text-vertex-blueprint font-bold">REV 3.0</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
+              <span className="text-vertex-steel">{isFa ? "طرح و برنامه‌نویس:" : "Lead Developer:"}</span>
+              <span className="font-bold text-vertex-primary">{isFa ? "سید سجاد طباطبایی" : "S. S. Tabatabaei"}</span>
+              <span className="text-vertex-steel">{isFa ? "شماره تماس:" : "Contact Tel:"}</span>
+              <a href="tel:09013356283" className="font-bold text-vertex-blueprint hover:underline" dir="ltr">09013356283</a>
+              <span className="text-vertex-steel">{isFa ? "استاندارد:" : "Safety Code:"}</span>
+              <span className="font-bold text-emerald-700">EN 81-20/50 / ۶۳۰۳</span>
+              <span className="text-vertex-steel">{isFa ? "مقیاس:" : "Scale:"}</span>
+              <span className="font-bold text-vertex-primary">1:20 / 3D Parametric</span>
+            </div>
+          </div>
         </div>
 
         {/* Right Side: CAD Controls, Kinematic Formulas & Suspension Details */}

@@ -1071,6 +1071,25 @@ EOF`;
                     </text>
                   </g>
                 )}
+
+                {/* AutoCAD / DigiPara Drawing Title Block (جدول مهندسی نقشه اتوکد) */}
+                <g transform="translate(540, 520)">
+                  <rect x="0" y="0" width="245" height="105" fill={isDark ? "#0f172a" : "#ffffff"} stroke={themeStyles.wallStroke} strokeWidth="1.5" />
+                  <rect x="0" y="0" width="245" height="22" fill={isDark ? "#1e293b" : "#f1f5f9"} stroke={themeStyles.wallStroke} strokeWidth="1" />
+                  <text x="12" y="15" fontSize="10" fill={themeStyles.highlight} fontWeight="bold">VERTEX ELEVATOR CAD STUDIO</text>
+                  <text x="235" y="15" fontSize="9" fill={themeStyles.text} textAnchor="end">REV 3.2</text>
+                  <line x1="0" y1="44" x2="245" y2="44" stroke={themeStyles.grid} strokeWidth="1" />
+                  <line x1="0" y1="65" x2="245" y2="65" stroke={themeStyles.grid} strokeWidth="1" />
+                  <line x1="0" y1="85" x2="245" y2="85" stroke={themeStyles.grid} strokeWidth="1" />
+                  <text x="12" y="37" fontSize="9" fill={themeStyles.text}>طرح و برنامه‌نویس:</text>
+                  <text x="110" y="37" fontSize="9" fill={themeStyles.highlight} fontWeight="bold">سید سجاد طباطبایی</text>
+                  <text x="12" y="58" fontSize="9" fill={themeStyles.text}>شماره تماس:</text>
+                  <text x="110" y="58" fontSize="9" fill="#0284c7" fontWeight="bold">09013356283</text>
+                  <text x="12" y="78" fontSize="9" fill={themeStyles.text}>استاندارد مرجع:</text>
+                  <text x="110" y="78" fontSize="9" fill="#10b981" fontWeight="bold">ISIRI 6303 / EN 81-20</text>
+                  <text x="12" y="98" fontSize="8" fill={themeStyles.text}>مقیاس و لایه‌ها:</text>
+                  <text x="110" y="98" fontSize="8" fill={themeStyles.text}>1:20 / DigiPara Layers</text>
+                </g>
               </svg>
             </div>
 
