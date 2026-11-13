@@ -781,6 +781,29 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
     carGroup.add(crosshead, safetyPlank, stileL, stileR);
 
+    // Car Top Hitch Plate with 4 Spring-Loaded Wedge Sockets (DIN 15315)
+    const carHitchGroup = new THREE.Group();
+    const hitchPlate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.08, 0.22),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.2 })
+    );
+    hitchPlate.position.set(0, carH / 2 + 0.38, -0.2);
+    carHitchGroup.add(hitchPlate);
+
+    const socketMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9, roughness: 0.2 });
+    const springMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+    
+    [-0.12, -0.04, 0.04, 0.12].forEach(ox => {
+      // Spring dampener
+      const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 12), springMat);
+      spring.position.set(ox, carH / 2 + 0.44, -0.2);
+      // Wedge socket body
+      const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 0.18, 12), socketMat);
+      socket.position.set(ox, carH / 2 + 0.54, -0.2);
+      carHitchGroup.add(spring, socket);
+    });
+    carGroup.add(carHitchGroup);
+
     // Roller Guide Shoes (۴ مجموعه کفشک رولری ۳ تایی با فنر)
     const rollerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6 });
     const rollerMountMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
@@ -910,7 +933,29 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         cwtGroup.add(block);
       }
 
-      if (suspension === "2_1_underslung" || suspension === "2_1_overslung" || suspension === "cantilever_2_1") {
+      if (suspension === "1_1_direct") {
+        // CWT Top Hitch Plate with 4 Spring-Loaded Wedge Sockets (DIN 15315)
+        const cwtHitchGroup = new THREE.Group();
+        const cwtHitchPlate = new THREE.Mesh(
+          new THREE.BoxGeometry(isSideCwt ? 0.35 : 0.65, 0.08, isSideCwt ? 0.65 : 0.22),
+          new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.2 })
+        );
+        cwtHitchPlate.position.set(0, cwtH / 2 + 0.05, 0);
+        cwtHitchGroup.add(cwtHitchPlate);
+
+        const socketMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9, roughness: 0.2 });
+        const springMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+        [-0.12, -0.04, 0.04, 0.12].forEach(offset => {
+          const sx = isSideCwt ? 0 : offset;
+          const sz = isSideCwt ? offset : 0;
+          const spring = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 12), springMat);
+          spring.position.set(sx, cwtH / 2 + 0.12, sz);
+          const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 0.18, 12), socketMat);
+          socket.position.set(sx, cwtH / 2 + 0.24, sz);
+          cwtHitchGroup.add(spring, socket);
+        });
+        cwtGroup.add(cwtHitchGroup);
+      } else if (suspension === "2_1_underslung" || suspension === "2_1_overslung" || suspension === "cantilever_2_1") {
         const cwtSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.22, 32), sheaveMat);
         if (isSideCwt) {
           cwtSheave.rotation.z = Math.PI / 2;
@@ -929,11 +974,16 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     const ropesContainer = new THREE.Group();
     scene.add(ropesContainer);
 
-    const ropeMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.95, roughness: 0.1 });
-    const unitCylGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.0, 8);
+    // Realistic steel wire rope material (braided metallic finish)
+    const ropeMat = new THREE.MeshStandardMaterial({ 
+      color: 0x94a3b8, 
+      metalness: 0.95, 
+      roughness: 0.25 
+    });
+    const unitCylGeo = new THREE.CylinderGeometry(0.022, 0.022, 1.0, 8);
 
     const preAllocatedRopes: THREE.Mesh[] = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 40; i++) {
       const rMesh = new THREE.Mesh(unitCylGeo, ropeMat);
       rMesh.visible = false;
       ropesContainer.add(rMesh);
@@ -1002,35 +1052,109 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
       const overheadSheaveY = overheadCeilingY + 0.3;
       const hitchTopY = overheadCeilingY - 0.2;
+      const ropeOffsets = [-0.12, -0.04, 0.04, 0.12];
+      let meshIdx = 0;
+
+      const diverterWorldY = overheadCeilingY - 0.45;
+      const diverterWorldX = cwtPosition === "rear" ? 0 : (cwtPosition === "right" ? halfW - 0.65 : -halfW + 0.65);
+      const diverterWorldZ = cwtPosition === "rear" ? -halfD + 0.65 : 0;
 
       if (suspension === "1_1_direct") {
-        positionCylinder(meshes[0], new THREE.Vector3(0, carY + carH / 2 + 0.35, 0), new THREE.Vector3(0, overheadSheaveY, -0.2), showRopes);
-        positionCylinder(meshes[1], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.1, cwtPosZ), showRopes);
+        for (let i = 0; i < ropeOffsets.length && meshIdx + 2 < meshes.length; i++) {
+          const off = ropeOffsets[i];
+          const carRopeX = off;
+          const carRopeZ = -0.2;
+          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
+          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+          const divRopeX = cwtPosition === "rear" ? diverterWorldX + off : diverterWorldX;
+          const divRopeZ = cwtPosition === "rear" ? diverterWorldZ : diverterWorldZ + off;
+
+          // 1) Car Hitch Socket straight up to Traction Sheave
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(carRopeX, carY + carH / 2 + 0.52, carRopeZ),
+            new THREE.Vector3(carRopeX, overheadSheaveY, carRopeZ),
+            showRopes
+          );
+          // 2) Traction Sheave across to Diverter Sheave
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(carRopeX, overheadSheaveY, carRopeZ),
+            new THREE.Vector3(divRopeX, diverterWorldY + 0.35, divRopeZ),
+            showRopes
+          );
+          // 3) Diverter Sheave strictly vertical drop down to CWT Hitch Socket
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(divRopeX, diverterWorldY, divRopeZ),
+            new THREE.Vector3(cwtRopeX, cwtY + 2.25, cwtRopeZ),
+            showRopes
+          );
+        }
       } else if (suspension === "2_1_underslung") {
-        const pBottomY = carY - carH / 2 - 0.4;
-        positionCylinder(meshes[0], new THREE.Vector3(-carW / 2 + 0.2, hitchTopY, 0), new THREE.Vector3(-carW / 2 + 0.2, pBottomY, 0), showRopes);
-        positionCylinder(meshes[1], new THREE.Vector3(-carW / 2 + 0.2, pBottomY - 0.2, 0), new THREE.Vector3(carW / 2 - 0.2, pBottomY - 0.2, 0), showRopes);
-        positionCylinder(meshes[2], new THREE.Vector3(carW / 2 - 0.2, pBottomY, 0), new THREE.Vector3(0.4, overheadSheaveY, -0.2), showRopes);
-        positionCylinder(meshes[3], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), showRopes);
-        positionCylinder(meshes[4], new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ), showRopes);
+        const pBottomY = carY - carH / 2 - 0.35;
+        for (let i = 0; i < ropeOffsets.length && meshIdx + 4 < meshes.length; i++) {
+          const off = ropeOffsets[i];
+          const hitchX = -carW / 2 + 0.2 + off;
+          const sheave2X = carW / 2 - 0.2 + off;
+          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
+          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+
+          // Fall 1: Ceiling dead-end hitch down to Car Sheave 1
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, 0), new THREE.Vector3(hitchX, pBottomY, 0), showRopes);
+          // Fall 2: Under car platform from Sheave 1 to Sheave 2
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, pBottomY - 0.12, 0), new THREE.Vector3(sheave2X, pBottomY - 0.12, 0), showRopes);
+          // Fall 3: From Sheave 2 up to Traction Sheave
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, pBottomY, 0), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
+          // Fall 4: Traction sheave across to CWT Sheave
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), showRopes);
+          // Fall 5: CWT Sheave back up to Ceiling CWT hitch
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+        }
       } else if (suspension === "2_1_overslung") {
         const carSheaveY = carY + carH / 2 + 0.55;
-        positionCylinder(meshes[0], new THREE.Vector3(-carW * 0.35, hitchTopY, 0), new THREE.Vector3(-carW * 0.35, carSheaveY, 0), showRopes);
-        positionCylinder(meshes[1], new THREE.Vector3(-carW * 0.35, carSheaveY + 0.2, 0), new THREE.Vector3(carW * 0.35, carSheaveY + 0.2, 0), showRopes);
-        positionCylinder(meshes[2], new THREE.Vector3(carW * 0.35, carSheaveY, 0), new THREE.Vector3(0.3, overheadSheaveY, -0.2), showRopes);
-        positionCylinder(meshes[3], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), showRopes);
-        positionCylinder(meshes[4], new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ), showRopes);
+        for (let i = 0; i < ropeOffsets.length && meshIdx + 4 < meshes.length; i++) {
+          const off = ropeOffsets[i];
+          const hitchX = -carW * 0.35 + off;
+          const sheave2X = carW * 0.35 + off;
+          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
+          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+
+          // Fall 1: Ceiling hitch 1 down to Car top sheave 1
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, 0), new THREE.Vector3(hitchX, carSheaveY, 0), showRopes);
+          // Fall 2: Across car top crosshead
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, carSheaveY + 0.15, 0), new THREE.Vector3(sheave2X, carSheaveY + 0.15, 0), showRopes);
+          // Fall 3: From Sheave 2 up to Traction sheave
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, carSheaveY, 0), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
+          // Fall 4: Traction sheave to CWT sheave
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), showRopes);
+          // Fall 5: CWT sheave up to Ceiling hitch 2
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+        }
       } else if (suspension === "4_1_heavy_duty") {
         const carSheaveY = carY + carH / 2 + 0.6;
-        positionCylinder(meshes[0], new THREE.Vector3(-carW * 0.35, hitchTopY, 0), new THREE.Vector3(-carW * 0.35, carSheaveY, 0), showRopes);
-        positionCylinder(meshes[1], new THREE.Vector3(carW * 0.35, carSheaveY, 0), new THREE.Vector3(0, overheadSheaveY, -0.2), showRopes);
-        positionCylinder(meshes[2], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.5, cwtPosZ), showRopes);
-        positionCylinder(meshes[3], new THREE.Vector3(cwtPosX, cwtY + 2.5, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ), showRopes);
+        for (let i = 0; i < ropeOffsets.length && meshIdx + 3 < meshes.length; i++) {
+          const off = ropeOffsets[i];
+          const hitchX = -carW * 0.35 + off;
+          const sheave2X = carW * 0.35 + off;
+          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
+          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, 0), new THREE.Vector3(hitchX, carSheaveY, 0), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, carSheaveY, 0), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+        }
       } else if (suspension === "cantilever_2_1") {
-        positionCylinder(meshes[0], new THREE.Vector3(-carW / 2 - 0.1, hitchTopY, 0), new THREE.Vector3(-carW / 2 - 0.1, carY, 0), showRopes);
-        positionCylinder(meshes[1], new THREE.Vector3(-carW / 2 - 0.1, carY, 0), new THREE.Vector3(0, overheadSheaveY, -0.2), showRopes);
-        positionCylinder(meshes[2], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), showRopes);
-        positionCylinder(meshes[3], new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ), showRopes);
+        for (let i = 0; i < ropeOffsets.length && meshIdx + 3 < meshes.length; i++) {
+          const off = ropeOffsets[i];
+          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
+          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-carW / 2 - 0.1, hitchTopY, off), new THREE.Vector3(-carW / 2 - 0.1, carY, off), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-carW / 2 - 0.1, carY, off), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.4, cwtRopeZ), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.4, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+        }
       } else if (suspension === "hydraulic_2_1") {
         const pitAnchorY = pitFloorY + 1.0;
         const ramHeadY = pitFloorY + 4.5 + 4.0 + (carY / 2);
@@ -1038,8 +1162,10 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         if (hydPistonRef.current) {
           hydPistonRef.current.position.y = 4.0 + (carY / 2);
         }
-        positionCylinder(meshes[0], new THREE.Vector3(-halfW + 0.5, pitAnchorY, 0), new THREE.Vector3(-halfW + 0.5, ramHeadY, 0), showRopes);
-        positionCylinder(meshes[1], new THREE.Vector3(-halfW + 0.9, ramHeadY, 0), new THREE.Vector3(-carW / 2 - 0.1, carBottomY, 0), showRopes);
+        [-0.05, 0.05].forEach(off => {
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-halfW + 0.5, pitAnchorY, off), new THREE.Vector3(-halfW + 0.5, ramHeadY, off), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-halfW + 0.9, ramHeadY, off), new THREE.Vector3(-carW / 2 - 0.1, carBottomY, off), showRopes);
+        });
       }
 
       // Traveling Cable (Flat flexible cable in catenary U-loop)

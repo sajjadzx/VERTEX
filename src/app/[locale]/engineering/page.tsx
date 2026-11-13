@@ -5,9 +5,7 @@ import { Locale, dictionary } from "@/lib/dictionary";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TechBadge } from "@/components/TechBadge";
 import { ElevatorAnatomy } from "@/components/ElevatorAnatomy";
-import { LiftDesignerCADStudio } from "@/components/LiftDesignerCADStudio";
-import { ThreeCADShaftViewer } from "@/components/ThreeCADShaftViewer";
-import { TractionCalculator } from "@/components/TractionCalculator";
+import { LiftDesignerUnifiedWorkspace } from "@/components/LiftDesignerUnifiedWorkspace";
 import { PageInterconnect } from "@/components/PageInterconnect";
 import { Cpu, Zap, Activity, ShieldCheck, ArrowUpRight, Gauge, Layers, Box, CheckCircle2 } from "lucide-react";
 
@@ -60,49 +58,9 @@ export default async function EngineeringPage({
         </div>
       </div>
 
-      {/* LiftDesigner & AutoCAD Engineering Drawing Studio (Top Feature) */}
-      <div className="pt-2 space-y-4">
-        <SectionHeader
-          align="left"
-          badge={isFa ? "موتور نقشه‌کشی لیفت‌دیزاینر" : "LIFTDESIGNER™ CAD ENGINE"}
-          title={isFa ? "استودیوی نقشه‌کشی مهندسی به سبک اتوکد و لیفت‌دیزاینر" : "Professional DigiPara LiftDesigner & AutoCAD Studio"}
-          subtitle={
-            isFa 
-              ? "پلان آهن‌کشی، تیرریزی، مقاطع ریل T89/T125، برش طولی چاه، موتور گیرلس، گاورنر و پاراشوت طبق استاندارد ۶۳۰۳."
-              : "Parametric hoistway layouts, ISO 7465 rails, elevation sections, and mechanical subsystems."
-          }
-        />
-        <LiftDesignerCADStudio locale={currentLocale} />
-      </div>
-
-      {/* Three.js 3D WebGL CAD Shaft Studio */}
-      <div className="pt-4 space-y-4">
-        <SectionHeader
-          align="left"
-          badge={isFa ? "موتور سه‌بعدی محاسبات چاه" : "THREE.JS 3D CAD ENGINE"}
-          title={isFa ? "شبیه‌ساز سه‌بعدی وکتوری سازه چاه و سینماتیک حرکت" : "Interactive 3D WebGL Parametric Shaft Model"}
-          subtitle={
-            isFa 
-              ? "مدل‌سازی زنده اجزای سازه‌ای چاه: آهن‌کشی، تیرریزی، ریل‌های T-Section، کادر وزنه تعادل، فضاهای جان‌پناه و ضربه‌گیرهای هیدرولیک."
-              : "Real-time 3D parametric visualization of shaft steel beams, counterweight sling, refuge safety cubes, and pit buffer kinematics."
-          }
-        />
-        <ThreeCADShaftViewer locale={currentLocale} />
-      </div>
-
-      {/* Embedded Traction Kinematic Calculator */}
-      <div className="pt-4 space-y-4">
-        <SectionHeader
-          align="left"
-          badge={isFa ? "محاسبات فنی درایو و موتور" : "KINEMATICS & ELECTRICAL"}
-          title={isFa ? "ماشین‌حساب مهندسی توان، گشتاور و اصطکاک کششی" : "Traction Kinematics & Euler-Eytelwein Engine"}
-          subtitle={
-            isFa 
-              ? "محاسبه زنده توان الکتروموتور گیرلس، گشتاور نامی شفت، جرم وزنه تعادل و کنترل شرایط اصطکاک عدم لغزش بر اساس استاندارد ۶۳۰۳ و EN 81-50."
-              : "Live calculation of motor shaft kW power, torque, counterweight mass, and rope traction safety factors."
-          }
-        />
-        <TractionCalculator locale={currentLocale} />
+      {/* Unified DigiPara LiftDesigner Engineering Workstation */}
+      <div className="pt-2">
+        <LiftDesignerUnifiedWorkspace locale={currentLocale} />
       </div>
 
       {/* 4 Engineering Pillars in Bright Cards */}
