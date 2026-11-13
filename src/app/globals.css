@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Vazirmatn:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
 @import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
@@ -15,9 +16,19 @@ html {
   color-scheme: light;
 }
 
-/* 100% Uniform Vazirmatn Font Enforcement in Persian */
+/* 100% Uniform Vazirmatn Font Enforcement in Persian across ALL elements */
 html[lang="fa"],
 html[lang="fa"] body,
+html[lang="fa"] footer,
+html[lang="fa"] header,
+html[lang="fa"] nav,
+html[lang="fa"] main,
+html[lang="fa"] section,
+html[lang="fa"] article,
+html[lang="fa"] aside,
+html[lang="fa"] ul,
+html[lang="fa"] ol,
+html[lang="fa"] li,
 html[lang="fa"] input,
 html[lang="fa"] button,
 html[lang="fa"] select,
@@ -35,9 +46,13 @@ html[lang="fa"] p,
 html[lang="fa"] span,
 html[lang="fa"] a,
 html[lang="fa"] div,
+html[lang="fa"] label,
+html[lang="fa"] strong,
+html[lang="fa"] b,
+html[lang="fa"] small,
 [dir="rtl"],
 [dir="rtl"] * {
-  font-family: 'Vazirmatn', var(--font-vazirmatn), system-ui, -apple-system, sans-serif !important;
+  font-family: 'Vazirmatn', var(--font-vazirmatn), 'Tahoma', system-ui, -apple-system, sans-serif !important;
 }
 
 body {

@@ -67,6 +67,7 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const [doorType, setDoorType] = useState<"2P-TEL" | "2P-CEN" | "3P-TEL" | "4P-CEN" | "HINGED">("2P-TEL");
   const [sheaveDia, setSheaveDia] = useState<number>(400); // mm (320, 400, 480, 520)
   const [suspension, setSuspension] = useState<"1:1" | "2:1" | "4:1" | "cantilever" | "hydraulic">("2:1");
+  const [cwtPosition, setCwtPosition] = useState<"rear" | "right" | "left">("rear");
   const [railType, setRailType] = useState<"T70" | "T75" | "T82" | "T89" | "T90" | "T125" | "T127" | "T140">("T125");
 
   // Selected DigiPara Brand Selections
@@ -196,10 +197,19 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const carTop = shaftTop + 70 + (shaftDpx - 70 - carDpx) * 0.45;
 
   const opWpx = Math.max(120, Math.min(carWpx - 20, op * scale));
-  const cwtWpx = carWpx * 0.75;
-  const cwtDpx = 22;
-  const cwtLeft = svgCenterX - cwtWpx / 2;
-  const cwtTop = shaftTop + 20;
+  
+  // Dynamic Counterweight Dimensions & Position (Rear, Right, or Left)
+  const isSideCwt = cwtPosition === "right" || cwtPosition === "left";
+  const cwtWpx = isSideCwt ? 24 : carWpx * 0.75;
+  const cwtDpx = isSideCwt ? carDpx * 0.65 : 24;
+  const cwtLeft = cwtPosition === "rear" 
+    ? svgCenterX - cwtWpx / 2 
+    : cwtPosition === "right" 
+      ? shaftLeft + shaftWpx - 38 
+      : shaftLeft + 14;
+  const cwtTop = cwtPosition === "rear" 
+    ? shaftTop + 20 
+    : svgCenterY - cwtDpx / 2;
 
   // Generate Official DigiPara-compliant DXF ASCII String
   const generateDxfString = () => {
@@ -743,6 +753,25 @@ EOF`;
                  "Hydraulic Cylinder + Pulley"}
               </span>
             </div>
+
+            {/* Counterweight Position Selector (Rear / Right / Left) */}
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+              <span className="text-[11px] font-semibold text-slate-300 block">{isFa ? "موقعیت وزنه تعادل:" : "CWT Position:"}</span>
+              <select
+                value={cwtPosition}
+                onChange={(e) => setCwtPosition(e.target.value as any)}
+                className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-1.5 text-xs font-mono outline-none focus:border-sky-500"
+              >
+                <option value="rear">{isFa ? "وزنه پشت چاهک (Rear CWT)" : "Rear Wall CWT"}</option>
+                <option value="right">{isFa ? "وزنه بغل راست (Right CWT)" : "Right Side CWT"}</option>
+                <option value="left">{isFa ? "وزنه بغل چپ (Left CWT)" : "Left Side CWT"}</option>
+              </select>
+              <span className="text-[10px] text-emerald-400 block truncate">
+                {cwtPosition === "rear" ? (isFa ? "استاندارد چاه‌های عمیق" : "Deep Shaft Standard") :
+                 cwtPosition === "right" ? (isFa ? "چاه‌های کم‌عمق و عریض" : "Wide Shallow Shaft") :
+                 (isFa ? "چاه‌های تونلی و خاص" : "Tunnel & Left Mount")}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -866,23 +895,46 @@ EOF`;
                   </g>
                 )}
 
-                {/* Counterweight Frame (کادر وزنه تعادل پشت کابین) */}
+                {/* Counterweight Frame (کادر وزنه تعادل پشت یا بغل کابین) */}
                 {showCwt && (
                   <g transform={`translate(${cwtLeft}, ${cwtTop})`}>
                     <rect x="0" y="0" width={cwtWpx} height={cwtDpx} fill={isDark ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.2)"} stroke={themeStyles.railCwt} strokeWidth="2" rx="2" />
-                    {Array.from({ length: 6 }).map((_, idx) => (
-                      <line 
-                        key={idx} 
-                        x1={(cwtWpx / 7) * (idx + 1)} y1="0" 
-                        x2={(cwtWpx / 7) * (idx + 1)} y2={cwtDpx} 
-                        stroke={themeStyles.railCwt} strokeWidth="1" strokeDasharray="2,2" 
-                      />
-                    ))}
-                    <rect x="-8" y="4" width="8" height="14" fill={themeStyles.railCwt} />
-                    <rect x={cwtWpx} y="4" width="8" height="14" fill={themeStyles.railCwt} />
-                    <text x={cwtWpx / 2} y="15" fontSize="9" fill={themeStyles.railCwt} textAnchor="middle" fontWeight="bold">
-                      CWT FRAME (T70 RAILS)
-                    </text>
+                    {isSideCwt ? (
+                      Array.from({ length: 5 }).map((_, idx) => (
+                        <line 
+                          key={idx} 
+                          x1="0" y1={(cwtDpx / 6) * (idx + 1)} 
+                          x2={cwtWpx} y2={(cwtDpx / 6) * (idx + 1)} 
+                          stroke={themeStyles.railCwt} strokeWidth="1" strokeDasharray="2,2" 
+                        />
+                      ))
+                    ) : (
+                      Array.from({ length: 6 }).map((_, idx) => (
+                        <line 
+                          key={idx} 
+                          x1={(cwtWpx / 7) * (idx + 1)} y1="0" 
+                          x2={(cwtWpx / 7) * (idx + 1)} y2={cwtDpx} 
+                          stroke={themeStyles.railCwt} strokeWidth="1" strokeDasharray="2,2" 
+                        />
+                      ))
+                    )}
+                    {isSideCwt ? (
+                      <>
+                        <rect x="4" y="-7" width="16" height="7" fill={themeStyles.railCwt} />
+                        <rect x="4" y={cwtDpx} width="16" height="7" fill={themeStyles.railCwt} />
+                        <text x={cwtWpx / 2} y={cwtDpx / 2 + 3} fontSize="8" fill={themeStyles.railCwt} textAnchor="middle" fontWeight="bold" transform={`rotate(-90, ${cwtWpx / 2}, ${cwtDpx / 2 + 3})`}>
+                          CWT {cwtPosition.toUpperCase()}
+                        </text>
+                      </>
+                    ) : (
+                      <>
+                        <rect x="-8" y="4" width="8" height="14" fill={themeStyles.railCwt} />
+                        <rect x={cwtWpx} y="4" width="8" height="14" fill={themeStyles.railCwt} />
+                        <text x={cwtWpx / 2} y="15" fontSize="9" fill={themeStyles.railCwt} textAnchor="middle" fontWeight="bold">
+                          CWT REAR FRAME (T70 RAILS)
+                        </text>
+                      </>
+                    )}
                   </g>
                 )}
 

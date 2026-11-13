@@ -9,10 +9,7 @@ import {
   RotateCcw, 
   Eye, 
   Sliders, 
-  Download, 
   Check, 
-  Maximize2, 
-  Minimize2, 
   Cpu, 
   ShieldCheck, 
   Ruler,
@@ -26,17 +23,20 @@ import {
   Sparkles,
   Info,
   ChevronRight,
-  Gauge
+  MoveHorizontal,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type SuspensionType = 
-  | "1_1_direct"        // ۱:۱ مستقیم موتورخانه / بالا
-  | "2_1_underslung"    // ۲:۱ زیر کابین MRL
-  | "2_1_overslung"     // ۲:۱ روی کابین یوک فوقانی
-  | "4_1_heavy_duty"    // ۴:۱ باربری سنگین صنعتی و خودروبر
-  | "cantilever_2_1"    // ۲:۱ کوله‌ای / کنسولی یک‌طرفه
-  | "hydraulic_2_1";    // ۲:۱ هیدرولیک غیرمستقیم با جک بغل
+  | "1_1_direct"        // ۱:۱ مستقیم
+  | "2_1_underslung"    // ۲:۱ زیر کابین
+  | "2_1_overslung"     // ۲:۱ روی کابین
+  | "4_1_heavy_duty"    // ۴:۱ باربری سنگین
+  | "cantilever_2_1"    // ۲:۱ کوله‌ای / کنسولی
+  | "hydraulic_2_1";    // ۲:۱ هیدرولیک جک بغل
+
+export type CounterweightPosition = "rear" | "right" | "left";
 
 interface SuspensionSpec {
   id: SuspensionType;
@@ -70,15 +70,15 @@ const SUSPENSION_CONFIGS: Record<SuspensionType, SuspensionSpec> = {
     ropeSpeedFactor: 1.0,
     torqueFactor: "۱۰۰٪ گشتاور نامی (حداکثر نیاز به گشتاور موتور)",
     sheaveCount: 1,
-    sheaveLocationFa: "تنها فلکه کشش موتور و یک فلکه انحراف (Diverter) در سر چاه",
+    sheaveLocationFa: "تنها فلکه کشش موتور و یک فلکه انحراف در سر چاه",
     sheaveLocationEn: "Overhead traction sheave and optional diverter sheave only",
-    typicalAppFa: "آسانسورهای پرسرعت (بیش از ۲.۵ متر بر ثانیه)، برج‌های بلندمرتبه و پروژه‌های موتورخانه‌دار",
+    typicalAppFa: "آسانسورهای پرسرعت (بیش از ۲.۵ متر بر ثانیه)، برج‌های بلندمرتبه و موتورخانه‌دار",
     typicalAppEn: "High-speed elevators (>2.5 m/s), high-rise towers, geared/gearless with machine room",
     advantagesFa: [
       "حداقل تعداد خمش سیم‌بکسل و افزایش چشمگیر طول عمر کابل‌ها",
       "بالاترین راندمان مکانیکی انتقال قدرت (بیش از ۹۲٪)",
       "سرعت سیم‌بکسل دقیقاً برابر با سرعت حرکت کابین (V_rope = V_car)",
-      "ساختار ساده‌تر بدون نیاز به هوزینگ فلکه روی کابین"
+      "ساختار ساده‌تر یوک کابین بدون نیاز به هوزینگ فلکه"
     ],
     advantagesEn: [
       "Minimal rope bends for maximum wire rope operating lifespan",
@@ -212,7 +212,7 @@ const SUSPENSION_CONFIGS: Record<SuspensionType, SuspensionSpec> = {
     shortDescEn: "Hydraulic ram with sheave atop cylinder piston; doubles cylinder stroke and cabin travel velocity.",
     ratio: "2:1",
     ratioVal: 2,
-    ropeSpeedFactor: 0.5, // Piston moves at 0.5 car speed
+    ropeSpeedFactor: 0.5,
     torqueFactor: "فشار هیدرولیک متناسب با سطح مقطع پیستون (۳۵ تا ۵۵ بار)",
     sheaveCount: 1,
     sheaveLocationFa: "۱ عدد فلکه پولی هیدرولیک متصل به سر پیستون متحرک جک در چاهک",
@@ -243,17 +243,20 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isFa = locale === "fa";
 
+  // Hydration mounted flag to guarantee smooth client render
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
   // Core Configuration States
   const [capacity, setCapacity] = useState<number>(1000); // kg
   const [speed, setSpeed] = useState<number>(2.0); // m/s
   const [suspension, setSuspension] = useState<SuspensionType>("2_1_underslung");
+  const [cwtPosition, setCwtPosition] = useState<CounterweightPosition>("rear");
   const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves">("3d");
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [wallMode, setWallMode] = useState<"cutaway" | "transparent" | "wireframe">("cutaway");
 
   // Display toggles
   const [showRopes, setShowRopes] = useState<boolean>(true);
-  const [showRails, setShowRails] = useState<boolean>(true);
   const [showTravelingCable, setShowTravelingCable] = useState<boolean>(true);
   const [showRefuge, setShowRefuge] = useState<boolean>(false);
   const [showDoors, setShowDoors] = useState<boolean>(true);
@@ -263,7 +266,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const carPosNormalizedRef = useRef<number>(0.5);
   const isAutoMovingRef = useRef<boolean>(true);
 
-  // Telemetry badge text (updated throttled to avoid 60fps React rerenders)
+  // Telemetry badge text (throttled to avoid 60fps React rerenders)
   const [telemetryElevation, setTelemetryElevation] = useState<number>(50);
   const [copiedDxf, setCopiedDxf] = useState<boolean>(false);
 
@@ -276,12 +279,12 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const carGroupRef = useRef<THREE.Group | null>(null);
   const cwtGroupRef = useRef<THREE.Group | null>(null);
   const machineGroupRef = useRef<THREE.Group | null>(null);
-  const dynamicRopesGroupRef = useRef<THREE.Group | null>(null);
-  const travelingCableGroupRef = useRef<THREE.Group | null>(null);
   const refugeGroupRef = useRef<THREE.Group | null>(null);
-  const wallGroupRef = useRef<THREE.Group | null>(null);
-  const railGroupRef = useRef<THREE.Group | null>(null);
   const hydPistonRef = useRef<THREE.Mesh | null>(null);
+
+  // Pre-allocated static rope segment meshes for 100% leak-free, 60fps rendering
+  const ropeSegmentMeshesRef = useRef<THREE.Mesh[]>([]);
+  const travelingCableMeshRef = useRef<THREE.Mesh | null>(null);
 
   // Orbit controls state
   const isDraggingRef = useRef<boolean>(false);
@@ -322,7 +325,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     cameraRef.current.lookAt(0, targetY, 0);
   }, []);
 
-  // Update preset views
+  // Preset Views
   useEffect(() => {
     if (viewMode === "3d") {
       cameraOrbitRef.current = { theta: 0.85, phi: 0.55, radius: 30, targetY: 0 };
@@ -333,7 +336,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     } else if (viewMode === "top") {
       cameraOrbitRef.current = { theta: 0, phi: 0.05, radius: 26, targetY: 0 };
     } else if (viewMode === "sheaves") {
-      // Zoom close to machine & upper pulleys
       cameraOrbitRef.current = { theta: 0.5, phi: 0.7, radius: 14, targetY: 8 };
     }
     updateCameraPosition();
@@ -344,20 +346,26 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     isAutoMovingRef.current = isPlaying;
   }, [isPlaying]);
 
+  // Set mounted on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // --------------------------------------------------------------------------
   // Main Three.js Scene Construction
   // --------------------------------------------------------------------------
   useEffect(() => {
+    if (!isMounted) return;
     const container = containerRef.current;
     if (!container) return;
 
     // 1. Scene & Environment
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.background = new THREE.Color(0xf1f5f9); // Clean architectural slate-100
+    scene.background = new THREE.Color(0xf8fafc); // Clean architectural Slate-50
 
     // 2. Camera & Viewport
-    const width = container.clientWidth;
+    const width = container.clientWidth || 800;
     const height = container.clientHeight || 560;
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     cameraRef.current = camera;
@@ -374,7 +382,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
-    // 4. Studio Lighting Rig
+    // 4. Studio Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
@@ -383,21 +391,14 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
-    sunLight.shadow.camera.near = 5;
-    sunLight.shadow.camera.far = 70;
-    sunLight.shadow.camera.left = -18;
-    sunLight.shadow.camera.right = 18;
-    sunLight.shadow.camera.top = 22;
-    sunLight.shadow.camera.bottom = -22;
     scene.add(sunLight);
 
-    // Blue architectural accent rim light
     const blueRimLight = new THREE.DirectionalLight(0x38bdf8, 0.6);
     blueRimLight.position.set(-20, 10, -20);
     scene.add(blueRimLight);
 
-    // 5. Shaft Geometry Coordinates
-    const shaftHeight = 24; // full travel + OH + pit in 3D scale units
+    // 5. Shaft Coordinates
+    const shaftHeight = 24;
     const sw3D = (shaftData.sw / 1000) * 3.4;
     const sd3D = (shaftData.sd / 1000) * 3.4;
     const halfW = sw3D / 2;
@@ -405,16 +406,24 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     const pitFloorY = -shaftHeight / 2;
     const overheadCeilingY = shaftHeight / 2;
 
+    // Counterweight Position Coordinates in 3D
+    let cwtPosX = 0;
+    let cwtPosZ = -halfD + 0.65;
+    if (cwtPosition === "right") {
+      cwtPosX = halfW - 0.65;
+      cwtPosZ = 0;
+    } else if (cwtPosition === "left") {
+      cwtPosX = -halfW + 0.65;
+      cwtPosZ = 0;
+    }
+
     // Ground Grid
     const grid = new THREE.GridHelper(30, 30, 0x0284c7, 0xcbd5e1);
     grid.position.y = pitFloorY - 0.05;
     scene.add(grid);
 
-    // A) Shaft Walls & Structural Columns
+    // A) Shaft Structural Columns & Ring Beams
     const wallGroup = new THREE.Group();
-    wallGroupRef.current = wallGroup;
-
-    // Concrete columns at 4 corners
     const colMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7, metalness: 0.1 });
     const colGeo = new THREE.BoxGeometry(0.5, shaftHeight, 0.5);
     [
@@ -430,31 +439,27 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       wallGroup.add(col);
     });
 
-    // Horizontal Steel Ring Beams (کلاف‌کشی هر ۳ واحد)
     const beamMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.6, roughness: 0.3 });
     for (let by = pitFloorY + 2.5; by < overheadCeilingY; by += 3.5) {
-      // Rear beam
       const bRear = new THREE.Mesh(new THREE.BoxGeometry(sw3D, 0.3, 0.3), beamMat);
       bRear.position.set(0, by, -halfD);
       wallGroup.add(bRear);
 
-      // Left beam
       const bLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, sd3D), beamMat);
       bLeft.position.set(-halfW, by, 0);
       wallGroup.add(bLeft);
 
-      // Right beam
       const bRight = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, sd3D), beamMat);
       bRight.position.set(halfW, by, 0);
       wallGroup.add(bRight);
     }
 
-    // Rear Wall panel (semi-transparent architectural glass/concrete)
+    // Wall panels
     const wallPanelMat = new THREE.MeshStandardMaterial({ 
       color: 0xe2e8f0, 
       roughness: 0.4, 
       transparent: true, 
-      opacity: wallMode === "wireframe" ? 0.15 : wallMode === "transparent" ? 0.35 : 0.85 
+      opacity: wallMode === "wireframe" ? 0.12 : wallMode === "transparent" ? 0.35 : 0.85 
     });
     const backWall = new THREE.Mesh(new THREE.BoxGeometry(sw3D, shaftHeight, 0.1), wallPanelMat);
     backWall.position.set(0, 0, -halfD);
@@ -468,8 +473,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
     // B) Guide Rails (ISO 7465 T-Section Style)
     const railGroup = new THREE.Group();
-    railGroupRef.current = railGroup;
-
     const carRailMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.85, roughness: 0.2 });
     const cwtRailMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.25 });
 
@@ -481,17 +484,27 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     railR.position.set(halfW - 0.55, 0, 0);
     railGroup.add(railL, railR);
 
-    // Counterweight Rails (rear or side depending on suspension)
+    // Counterweight Rails (rear, right, or left)
     const cwtRailGeo = new THREE.BoxGeometry(0.12, shaftHeight - 0.5, 0.12);
-    const cwtRailPos = suspension === "cantilever_2_1" 
-      ? [[-halfW + 0.55, 0, -halfD * 0.55], [-halfW + 0.55, 0, halfD * 0.55]]
-      : [[-1.2, 0, -halfD + 0.65], [1.2, 0, -halfD + 0.65]];
-
-    cwtRailPos.forEach(([rx, ry, rz]) => {
-      const cRail = new THREE.Mesh(cwtRailGeo, cwtRailMat);
-      cRail.position.set(rx, ry, rz);
-      railGroup.add(cRail);
-    });
+    if (cwtPosition === "rear") {
+      [-1.2, 1.2].forEach(rx => {
+        const cRail = new THREE.Mesh(cwtRailGeo, cwtRailMat);
+        cRail.position.set(rx, 0, -halfD + 0.65);
+        railGroup.add(cRail);
+      });
+    } else if (cwtPosition === "right") {
+      [-0.8, 0.8].forEach(rz => {
+        const cRail = new THREE.Mesh(cwtRailGeo, cwtRailMat);
+        cRail.position.set(halfW - 0.65, 0, rz);
+        railGroup.add(cRail);
+      });
+    } else if (cwtPosition === "left") {
+      [-0.8, 0.8].forEach(rz => {
+        const cRail = new THREE.Mesh(cwtRailGeo, cwtRailMat);
+        cRail.position.set(-halfW + 0.65, 0, rz);
+        railGroup.add(cRail);
+      });
+    }
 
     scene.add(railGroup);
 
@@ -505,7 +518,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         const dGroup = new THREE.Group();
         dGroup.position.set(0, dy, halfD);
 
-        // Header and frame jambs
         const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 0.2), doorFrameMat);
         jambL.position.set(-1.45, 0, 0);
         const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 0.2), doorFrameMat);
@@ -513,7 +525,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         const header = new THREE.Mesh(new THREE.BoxGeometry(3.05, 0.25, 0.2), doorFrameMat);
         header.position.set(0, 1.6, 0);
 
-        // Door panels
         const leaf1 = new THREE.Mesh(new THREE.BoxGeometry(1.3, 3.0, 0.06), doorLeafMat);
         leaf1.position.set(-0.68, 0, 0);
         const leaf2 = new THREE.Mesh(new THREE.BoxGeometry(1.3, 3.0, 0.06), doorLeafMat);
@@ -524,7 +535,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       });
     }
 
-    // D) Pit Buffers (ضربه‌گیرهای هیدرولیک و پلی‌اورتان کف چاهک)
+    // D) Pit Buffers
     const bufMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.2 });
     const bufBaseMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5 });
 
@@ -537,32 +548,29 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       scene.add(base, piston);
     });
 
-    // CWT Buffer
-    const cwtBufBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), bufBaseMat);
-    const cwtBufX = suspension === "cantilever_2_1" ? -halfW + 0.55 : 0;
-    const cwtBufZ = suspension === "cantilever_2_1" ? 0 : -halfD + 0.65;
-    cwtBufBase.position.set(cwtBufX, pitFloorY + 0.2, cwtBufZ);
-    const cwtBufPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.2, 16), bufMat);
-    cwtBufPiston.position.set(cwtBufX, pitFloorY + 0.9, cwtBufZ);
-    scene.add(cwtBufBase, cwtBufPiston);
+    // CWT Buffer (dynamically located at cwtPosX, cwtPosZ)
+    if (suspension !== "hydraulic_2_1") {
+      const cwtBufBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.5), bufBaseMat);
+      cwtBufBase.position.set(cwtPosX, pitFloorY + 0.2, cwtPosZ);
+      const cwtBufPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.2, 16), bufMat);
+      cwtBufPiston.position.set(cwtPosX, pitFloorY + 0.9, cwtPosZ);
+      scene.add(cwtBufBase, cwtBufPiston);
+    }
 
     // E) Machine & Drive Head (سر چاهک / موتورخانه)
     const machineGroup = new THREE.Group();
     machineGroupRef.current = machineGroup;
 
     if (suspension === "hydraulic_2_1") {
-      // Hydraulic System: Cylinder in Pit
       const hydGroup = new THREE.Group();
       hydGroup.position.set(-halfW + 0.7, pitFloorY + 4.5, 0);
 
-      // Outer cylinder barrel
       const barrel = new THREE.Mesh(
         new THREE.CylinderGeometry(0.3, 0.3, 9, 24),
         new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.2 })
       );
       hydGroup.add(barrel);
 
-      // Moving chrome ram piston
       const ram = new THREE.Mesh(
         new THREE.CylinderGeometry(0.18, 0.18, 8, 24),
         new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.98, roughness: 0.05 })
@@ -571,7 +579,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       hydPistonRef.current = ram;
       hydGroup.add(ram);
 
-      // Hydraulic Sheave on top of ram
       const hydSheave = new THREE.Mesh(
         new THREE.CylinderGeometry(0.65, 0.65, 0.25, 32),
         new THREE.MeshStandardMaterial({ color: 0x0891b2, metalness: 0.9, roughness: 0.1 })
@@ -582,17 +589,14 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
       machineGroup.add(hydGroup);
     } else {
-      // Traction Machine (موتور سنکرون گیرلس PMSM با شاسی ایزوله)
       machineGroup.position.set(0, overheadCeilingY - 0.8, 0);
 
-      // Heavy steel machine bedplate beams (تیرهای دوبل ناودانی شاسی موتور)
       const bedplate = new THREE.Mesh(
         new THREE.BoxGeometry(sw3D - 0.8, 0.4, 1.6),
         new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 })
       );
       machineGroup.add(bedplate);
 
-      // PMSM Synchronous Motor Body
       const motorBody = new THREE.Mesh(
         new THREE.CylinderGeometry(1.0, 1.0, 1.6, 32),
         new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.2 })
@@ -601,7 +605,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       motorBody.position.set(0, 1.1, 0);
       machineGroup.add(motorBody);
 
-      // Disc Brake Calipers (ترمز دیسکی دوبل)
       const brakeGeo = new THREE.BoxGeometry(0.35, 0.8, 0.6);
       const brakeMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.6 });
       const brake1 = new THREE.Mesh(brakeGeo, brakeMat);
@@ -610,23 +613,30 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       brake2.position.set(0.9, 1.1, 0.6);
       machineGroup.add(brake1, brake2);
 
-      // Traction Sheave with cable grooves (فلکه کشش)
       const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
       const tractionSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.35, 32), sheaveMat);
       tractionSheave.rotation.z = Math.PI / 2;
       tractionSheave.position.set(0, 1.1, -0.2);
       machineGroup.add(tractionSheave);
 
-      // Deflector / Diverter Sheave (فلکه انحراف)
+      // Diverter Sheave oriented toward Counterweight Position
       const diverterSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.28, 32), sheaveMat);
-      diverterSheave.rotation.z = Math.PI / 2;
-      diverterSheave.position.set(0, 0.4, -halfD + 0.65);
+      if (cwtPosition === "rear") {
+        diverterSheave.rotation.z = Math.PI / 2;
+        diverterSheave.position.set(0, 0.4, -halfD + 0.65);
+      } else if (cwtPosition === "right") {
+        diverterSheave.rotation.x = Math.PI / 2;
+        diverterSheave.position.set(halfW - 0.65, 0.4, 0);
+      } else if (cwtPosition === "left") {
+        diverterSheave.rotation.x = Math.PI / 2;
+        diverterSheave.position.set(-halfW + 0.65, 0.4, 0);
+      }
       machineGroup.add(diverterSheave);
     }
 
     scene.add(machineGroup);
 
-    // F) Comprehensive Realistic Elevator Car Assembly (کابین و یوک مهندسی)
+    // F) Elevator Car Assembly (یوک فولادی و کابین استنلس استیل)
     const carGroup = new THREE.Group();
     carGroupRef.current = carGroup;
 
@@ -634,18 +644,15 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     const carD = (shaftData.cd / 1000) * 2.8;
     const carH = (shaftData.ch / 1000) * 2.0;
 
-    // 1. Steel Sling (یوک فولادی کابین)
     const slingMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.75, roughness: 0.25 });
     
-    // Top Crosshead Beam (تیر دوبل فوقانی)
+    // Crosshead, Safety Plank, and Stiles
     const crosshead = new THREE.Mesh(new THREE.BoxGeometry(carW + 0.4, 0.28, 0.35), slingMat);
     crosshead.position.set(0, carH / 2 + 0.2, 0);
     
-    // Bottom Safety Plank (تیر تحتانی کفی با ناودانی دوبل)
     const safetyPlank = new THREE.Mesh(new THREE.BoxGeometry(carW + 0.4, 0.35, 0.35), slingMat);
     safetyPlank.position.set(0, -carH / 2 - 0.2, 0);
 
-    // Left and Right Vertical Upright Stiles (ستون‌های عمودی یوک)
     const stileGeo = new THREE.BoxGeometry(0.2, carH + 0.7, 0.3);
     const stileL = new THREE.Mesh(stileGeo, slingMat);
     stileL.position.set(-carW / 2 - 0.1, 0, 0);
@@ -654,10 +661,9 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
     carGroup.add(crosshead, safetyPlank, stileL, stileR);
 
-    // 2. Roller Guide Shoes (۴ مجموعه کفشک رولری ۳ تایی متصل به ریل‌ها)
+    // Roller Guide Shoes
     const rollerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6 });
     const rollerMountMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
-    
     [
       [-carW / 2 - 0.22, carH / 2 + 0.2, 0],
       [carW / 2 + 0.22, carH / 2 + 0.2, 0],
@@ -672,7 +678,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       carGroup.add(mount, wheel);
     });
 
-    // 3. Progressive Safety Gear Wedges (فک‌های پاراشوت تدریجی زیر کفی)
+    // Safety Gear Wedges
     const safetyBlockMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.7 });
     [-carW / 2 - 0.1, carW / 2 + 0.1].forEach((px) => {
       const pBlock = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.45, 0.3), safetyBlockMat);
@@ -680,33 +686,24 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       carGroup.add(pBlock);
     });
 
-    // 4. Cabin Body Shell (کابین لوکس استنلس استیل با پنجره و آینه)
-    const cabinWallMat = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      metalness: 0.85,
-      roughness: 0.2,
-      envMapIntensity: 1.2
-    });
-    const cabinGlassMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      metalness: 0.2,
-      roughness: 0.1,
-      transparent: true,
-      opacity: 0.45
-    });
-
-    // Main cabin box
-    const cabinShell = new THREE.Mesh(new THREE.BoxGeometry(carW, carH, carD), cabinWallMat);
+    // Cabin Enclosure Shell
+    const cabinShell = new THREE.Mesh(
+      new THREE.BoxGeometry(carW, carH, carD),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.85, roughness: 0.2 })
+    );
     cabinShell.castShadow = true;
     cabinShell.receiveShadow = true;
     carGroup.add(cabinShell);
 
-    // Rear Mirror / Panoramic Glass insert
-    const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(carW - 0.4, carH - 0.4, 0.02), cabinGlassMat);
+    // Glass panel
+    const rearGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(carW - 0.4, carH - 0.4, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.2, roughness: 0.1, transparent: true, opacity: 0.45 })
+    );
     rearGlass.position.set(0, 0, -carD / 2 - 0.01);
     carGroup.add(rearGlass);
 
-    // Cabin Floor (Carrara Marble finish)
+    // Cabin Floor
     const floorMesh = new THREE.Mesh(
       new THREE.BoxGeometry(carW - 0.1, 0.08, carD - 0.1),
       new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.25 })
@@ -714,33 +711,26 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     floorMesh.position.set(0, -carH / 2 + 0.05, 0);
     carGroup.add(floorMesh);
 
-    // Interior Warm LED Ceiling Glow
+    // Interior Warm LED Glow
     const interiorLight = new THREE.PointLight(0xfffbeb, 1.8, 4.5);
     interiorLight.position.set(0, carH / 2 - 0.3, 0);
     carGroup.add(interiorLight);
 
-    // Car Roof Inspection Station & Safety Handrail (سکوی سرویس‌کار و کلید استپ)
+    // Roof Inspection Box & Yellow Safety Handrail
     const inspBox = new THREE.Mesh(
       new THREE.BoxGeometry(0.5, 0.35, 0.35),
       new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6 })
     );
     inspBox.position.set(carW * 0.25, carH / 2 + 0.25, carD * 0.2);
-    const stopBtn = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.06, 0.08, 16),
-      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 })
-    );
-    stopBtn.position.set(carW * 0.25, carH / 2 + 0.45, carD * 0.2);
-
-    // Yellow Safety Handrail on roof
-    const railLineMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.4 });
+    
     const handrail = new THREE.Mesh(
       new THREE.BoxGeometry(carW - 0.4, 0.6, carD - 0.4),
       new THREE.MeshStandardMaterial({ color: 0xeab308, wireframe: true })
     );
     handrail.position.set(0, carH / 2 + 0.45, 0);
-    carGroup.add(inspBox, stopBtn, handrail);
+    carGroup.add(inspBox, handrail);
 
-    // Automatic Door Operator on Car Top (موتور درب فرماتور 40/10 با تسمه)
+    // Door operator box
     const opBox = new THREE.Mesh(
       new THREE.BoxGeometry(carW * 0.85, 0.25, 0.2),
       new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
@@ -748,11 +738,9 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     opBox.position.set(0, carH / 2 + 0.2, carD / 2 + 0.1);
     carGroup.add(opBox);
 
-    // 5. Suspension Sheaves on Car (بسته به نوع سیستم تعلیق)
+    // Sheaves on Car for 2:1 & 4:1
     const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
-    
     if (suspension === "2_1_underslung") {
-      // 2 Sheaves underneath the car platform
       const uSheave1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 32), sheaveMat);
       uSheave1.rotation.z = Math.PI / 2;
       uSheave1.position.set(-carW / 2 + 0.2, -carH / 2 - 0.4, 0);
@@ -761,7 +749,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       uSheave2.position.set(carW / 2 - 0.2, -carH / 2 - 0.4, 0);
       carGroup.add(uSheave1, uSheave2);
     } else if (suspension === "2_1_overslung") {
-      // 2 Sheaves on top crosshead
       const oSheave1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 32), sheaveMat);
       oSheave1.rotation.z = Math.PI / 2;
       oSheave1.position.set(-carW * 0.35, carH / 2 + 0.55, 0);
@@ -769,14 +756,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       oSheave2.rotation.z = Math.PI / 2;
       oSheave2.position.set(carW * 0.35, carH / 2 + 0.55, 0);
       carGroup.add(oSheave1, oSheave2);
-    } else if (suspension === "4_1_heavy_duty") {
-      // Dual sheaves top and bottom
-      [-carW * 0.35, carW * 0.35].forEach((sx) => {
-        const dualSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.35, 32), sheaveMat);
-        dualSheave.rotation.z = Math.PI / 2;
-        dualSheave.position.set(sx, carH / 2 + 0.6, 0);
-        carGroup.add(dualSheave);
-      });
     }
 
     scene.add(carGroup);
@@ -786,291 +765,164 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     cwtGroupRef.current = cwtGroup;
 
     if (suspension !== "hydraulic_2_1") {
-      const cwtW = 2.2;
+      const isSideCwt = cwtPosition === "right" || cwtPosition === "left";
+      const cwtW = isSideCwt ? 0.5 : 2.2;
+      const cwtD = isSideCwt ? 1.8 : 0.5;
       const cwtH = 4.2;
-      const cwtD = 0.5;
 
-      // Steel welded frame
       const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
       const cwtFrame = new THREE.Mesh(new THREE.BoxGeometry(cwtW, cwtH, cwtD), frameMat);
       cwtGroup.add(cwtFrame);
 
-      // Stacked Cast Iron Filler Blocks (وزنه‌های چدنی پرکننده)
       const blockMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.4 });
       for (let cy = -1.6; cy <= 1.6; cy += 0.45) {
-        const block = new THREE.Mesh(new THREE.BoxGeometry(cwtW - 0.2, 0.38, cwtD - 0.08), blockMat);
+        const block = new THREE.Mesh(new THREE.BoxGeometry(cwtW - 0.1, 0.38, cwtD - 0.1), blockMat);
         block.position.set(0, cy, 0);
         cwtGroup.add(block);
       }
 
-      // Counterweight Suspension Sheave (برای ۲:۱ و ۴:۱)
+      // Counterweight Pulley (Sheave) for 2:1 & 4:1
       if (suspension === "2_1_underslung" || suspension === "2_1_overslung" || suspension === "cantilever_2_1") {
         const cwtSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.22, 32), sheaveMat);
-        cwtSheave.rotation.x = Math.PI / 2;
+        if (isSideCwt) {
+          cwtSheave.rotation.z = Math.PI / 2;
+        } else {
+          cwtSheave.rotation.x = Math.PI / 2;
+        }
         cwtSheave.position.set(0, cwtH / 2 + 0.4, 0);
         cwtGroup.add(cwtSheave);
-      } else if (suspension === "4_1_heavy_duty") {
-        const cwtDual = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.38, 32), sheaveMat);
-        cwtDual.rotation.x = Math.PI / 2;
-        cwtDual.position.set(0, cwtH / 2 + 0.45, 0);
-        cwtGroup.add(cwtDual);
       }
 
-      // Initial position of Counterweight
-      const cwtPosX = suspension === "cantilever_2_1" ? -halfW + 0.55 : 0;
-      const cwtPosZ = suspension === "cantilever_2_1" ? 0 : -halfD + 0.65;
       cwtGroup.position.set(cwtPosX, 0, cwtPosZ);
       scene.add(cwtGroup);
     }
 
-    // H) Dynamic Steel Wire Ropes (سیم‌بکسل‌های متحرک و اتصالات سر چاه)
-    const ropesGroup = new THREE.Group();
-    dynamicRopesGroupRef.current = ropesGroup;
-    scene.add(ropesGroup);
+    // H) PRE-ALLOCATED ROPE SEGMENT MESHES (Zero memory leak, rock-solid 60 FPS!)
+    const ropesContainer = new THREE.Group();
+    scene.add(ropesContainer);
 
-    // I) Traveling Electric Cable (کابل فرمان آویزان با انحنای طبیعی U)
-    const cableGroup = new THREE.Group();
-    travelingCableGroupRef.current = cableGroup;
-    scene.add(cableGroup);
+    const ropeMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.95, roughness: 0.1 });
+    const unitCylGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.0, 8); // Unit cylinder of length 1.0
 
-    // J) Safety Refuge Spaces (EN 81-20 مکعب‌های جان‌پناه ایمنی)
+    // Pre-create 12 reusable rope segment meshes
+    const preAllocatedRopes: THREE.Mesh[] = [];
+    for (let i = 0; i < 12; i++) {
+      const rMesh = new THREE.Mesh(unitCylGeo, ropeMat);
+      rMesh.visible = false;
+      ropesContainer.add(rMesh);
+      preAllocatedRopes.push(rMesh);
+    }
+    ropeSegmentMeshesRef.current = preAllocatedRopes;
+
+    // Pre-create Traveling Cable mesh
+    const travelingCableMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
+    const cableCylGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.0, 8);
+    const tcMesh = new THREE.Mesh(cableCylGeo, travelingCableMat);
+    tcMesh.visible = false;
+    scene.add(tcMesh);
+    travelingCableMeshRef.current = tcMesh;
+
+    // I) Safety Refuge Spaces
     const refugeGroup = new THREE.Group();
     refugeGroupRef.current = refugeGroup;
     refugeGroup.visible = showRefuge;
 
-    const refMat = new THREE.MeshBasicMaterial({ 
-      color: 0x10b981, 
-      wireframe: true, 
-      transparent: true, 
-      opacity: 0.85 
-    });
-
-    // Car Top Refuge (0.5m x 0.7m x 1.0m standing or crouching)
+    const refMat = new THREE.MeshBasicMaterial({ color: 0x10b981, wireframe: true, transparent: true, opacity: 0.85 });
     const refTop = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.8), refMat);
     refTop.position.set(-carW * 0.2, carH / 2 + 0.8, 0);
     carGroup.add(refTop);
 
-    // Pit Refuge Space on pit floor
     const refPit = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 1.0), refMat);
     refPit.position.set(halfW - 1.2, pitFloorY + 0.6, halfD - 1.2);
     refugeGroup.add(refPit);
-
     scene.add(refugeGroup);
 
     // ------------------------------------------------------------------------
-    // Ropes Re-calculation Function
+    // Zero-Allocation Rope Updates Function
     // ------------------------------------------------------------------------
-    const updateRopesAndCables = (carY: number, cwtY: number) => {
-      // Clear previous dynamic rope meshes
-      while (ropesGroup.children.length > 0) {
-        const obj = ropesGroup.children[0];
-        ropesGroup.remove(obj);
+    const positionRopeMesh = (mesh: THREE.Mesh, p1: THREE.Vector3, p2: THREE.Vector3) => {
+      const dir = new THREE.Vector3().subVectors(p2, p1);
+      const len = dir.length();
+      if (len < 0.01) {
+        mesh.visible = false;
+        return;
       }
+      mesh.visible = showRopes;
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      mesh.position.copy(mid);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      mesh.scale.set(1, len, 1); // Scale unit cylinder by length!
+    };
+
+    const updateRopesAndCables = (carY: number, cwtY: number) => {
+      const meshes = ropeSegmentMeshesRef.current;
+      meshes.forEach(m => { m.visible = false; });
 
       if (!showRopes) return;
 
-      const ropeMat = new THREE.MeshStandardMaterial({ 
-        color: 0x38bdf8, // High-visibility precision steel cyan
-        metalness: 0.95, 
-        roughness: 0.1 
-      });
-
-      const ropeThickness = 0.04;
-      const ropeCount = suspension === "4_1_heavy_duty" ? 6 : 4;
-      const ropeSpacing = 0.08;
-
-      // Draw helper: Multi-rope tube between two points
-      const drawMultiRope = (p1: THREE.Vector3, p2: THREE.Vector3, axisSpread: "x" | "z" = "x") => {
-        const dir = new THREE.Vector3().subVectors(p2, p1);
-        const len = dir.length();
-        if (len < 0.01) return;
-
-        const cylGeo = new THREE.CylinderGeometry(ropeThickness, ropeThickness, len, 8);
-        const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-
-        for (let r = 0; r < ropeCount; r++) {
-          const offset = (r - (ropeCount - 1) / 2) * ropeSpacing;
-          const ropeMesh = new THREE.Mesh(cylGeo, ropeMat);
-          
-          const pos = midPoint.clone();
-          if (axisSpread === "x") pos.x += offset;
-          else pos.z += offset;
-          
-          ropeMesh.position.copy(pos);
-          ropeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-          ropesGroup.add(ropeMesh);
-        }
-      };
+      const overheadSheaveY = overheadCeilingY + 0.3;
+      const hitchTopY = overheadCeilingY - 0.2;
 
       if (suspension === "1_1_direct") {
-        // From Car Crosshead -> Up to Traction Sheave -> Over Sheave to CWT Hitch
-        const carHitchY = carY + carH / 2 + 0.35;
-        const machineSheaveY = overheadCeilingY + 0.3;
-        
-        drawMultiRope(
-          new THREE.Vector3(0, carHitchY, 0),
-          new THREE.Vector3(0, machineSheaveY, -0.2),
-          "x"
-        );
-        drawMultiRope(
-          new THREE.Vector3(0, machineSheaveY, -halfD + 0.65),
-          new THREE.Vector3(0, cwtY + 2.1, -halfD + 0.65),
-          "x"
-        );
+        // Car to Machine
+        positionRopeMesh(meshes[0], new THREE.Vector3(0, carY + carH / 2 + 0.35, 0), new THREE.Vector3(0, overheadSheaveY, -0.2));
+        // Machine to CWT
+        positionRopeMesh(meshes[1], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.1, cwtPosZ));
       } else if (suspension === "2_1_underslung") {
-        // Fixed Hitch Beam on Top -> Down to Under-car Pulley 1 -> Under Car -> Pulley 2 -> Up to Machine -> Down to CWT Pulley -> Up to Top Hitch
-        const hitchTopY = overheadCeilingY - 0.2;
-        const pulleyBottomY = carY - carH / 2 - 0.4;
-        const machineSheaveY = overheadCeilingY + 0.3;
-
-        // Fall 1: Top Hitch (Left) -> Underslung Sheave 1
-        drawMultiRope(
-          new THREE.Vector3(-carW / 2 + 0.2, hitchTopY, 0),
-          new THREE.Vector3(-carW / 2 + 0.2, pulleyBottomY, 0),
-          "z"
-        );
-
-        // Fall 2: Under Car Platform (Horizontal rope run)
-        drawMultiRope(
-          new THREE.Vector3(-carW / 2 + 0.2, pulleyBottomY - 0.2, 0),
-          new THREE.Vector3(carW / 2 - 0.2, pulleyBottomY - 0.2, 0),
-          "z"
-        );
-
-        // Fall 3: Underslung Sheave 2 -> Up to Traction Sheave
-        drawMultiRope(
-          new THREE.Vector3(carW / 2 - 0.2, pulleyBottomY, 0),
-          new THREE.Vector3(0.4, machineSheaveY, -0.2),
-          "z"
-        );
-
-        // Fall 4: Traction Sheave -> Down around Counterweight Sheave
-        drawMultiRope(
-          new THREE.Vector3(0, machineSheaveY, -halfD + 0.65),
-          new THREE.Vector3(-0.3, cwtY + 2.4, -halfD + 0.65),
-          "x"
-        );
-
-        // Fall 5: CWT Sheave -> Up to Top Dead-End Hitch
-        drawMultiRope(
-          new THREE.Vector3(0.3, cwtY + 2.4, -halfD + 0.65),
-          new THREE.Vector3(0.3, hitchTopY, -halfD + 0.65),
-          "x"
-        );
+        const pBottomY = carY - carH / 2 - 0.4;
+        // Fall 1: Top Hitch -> Underslung Pulley 1
+        positionRopeMesh(meshes[0], new THREE.Vector3(-carW / 2 + 0.2, hitchTopY, 0), new THREE.Vector3(-carW / 2 + 0.2, pBottomY, 0));
+        // Fall 2: Under platform
+        positionRopeMesh(meshes[1], new THREE.Vector3(-carW / 2 + 0.2, pBottomY - 0.2, 0), new THREE.Vector3(carW / 2 - 0.2, pBottomY - 0.2, 0));
+        // Fall 3: Underslung Pulley 2 -> Machine Sheave
+        positionRopeMesh(meshes[2], new THREE.Vector3(carW / 2 - 0.2, pBottomY, 0), new THREE.Vector3(0.4, overheadSheaveY, -0.2));
+        // Fall 4: Machine Sheave -> CWT Sheave
+        positionRopeMesh(meshes[3], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ));
+        // Fall 5: CWT Sheave -> Top Dead End Hitch
+        positionRopeMesh(meshes[4], new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ));
       } else if (suspension === "2_1_overslung") {
-        // Hitch Beam Top -> Down around Car Crosshead Sheaves -> Up to Traction Machine -> Down to CWT Sheave -> Up to Hitch
-        const hitchTopY = overheadCeilingY - 0.2;
         const carSheaveY = carY + carH / 2 + 0.55;
-        const machineSheaveY = overheadCeilingY + 0.3;
-
-        // Fall 1: Dead End Hitch -> Car Sheave 1
-        drawMultiRope(
-          new THREE.Vector3(-carW * 0.35, hitchTopY, 0),
-          new THREE.Vector3(-carW * 0.35, carSheaveY, 0),
-          "z"
-        );
-
-        // Fall 2: Crosshead span between sheaves
-        drawMultiRope(
-          new THREE.Vector3(-carW * 0.35, carSheaveY + 0.2, 0),
-          new THREE.Vector3(carW * 0.35, carSheaveY + 0.2, 0),
-          "z"
-        );
-
-        // Fall 3: Car Sheave 2 -> Up to Traction Sheave
-        drawMultiRope(
-          new THREE.Vector3(carW * 0.35, carSheaveY, 0),
-          new THREE.Vector3(0.3, machineSheaveY, -0.2),
-          "z"
-        );
-
-        // Fall 4: Traction Sheave -> CWT Sheave
-        drawMultiRope(
-          new THREE.Vector3(0, machineSheaveY, -halfD + 0.65),
-          new THREE.Vector3(-0.3, cwtY + 2.4, -halfD + 0.65),
-          "x"
-        );
-
-        // Fall 5: CWT Sheave -> Dead-End Hitch on Shaft Roof
-        drawMultiRope(
-          new THREE.Vector3(0.3, cwtY + 2.4, -halfD + 0.65),
-          new THREE.Vector3(0.3, hitchTopY, -halfD + 0.65),
-          "x"
-        );
+        // Fall 1: Hitch -> Car Sheave 1
+        positionRopeMesh(meshes[0], new THREE.Vector3(-carW * 0.35, hitchTopY, 0), new THREE.Vector3(-carW * 0.35, carSheaveY, 0));
+        // Fall 2: Across crosshead
+        positionRopeMesh(meshes[1], new THREE.Vector3(-carW * 0.35, carSheaveY + 0.2, 0), new THREE.Vector3(carW * 0.35, carSheaveY + 0.2, 0));
+        // Fall 3: Car Sheave 2 -> Machine
+        positionRopeMesh(meshes[2], new THREE.Vector3(carW * 0.35, carSheaveY, 0), new THREE.Vector3(0.3, overheadSheaveY, -0.2));
+        // Fall 4: Machine -> CWT
+        positionRopeMesh(meshes[3], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ));
+        // Fall 5: CWT -> Top Hitch
+        positionRopeMesh(meshes[4], new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ));
       } else if (suspension === "4_1_heavy_duty") {
-        // 4:1 Heavy Freight Multiple Falls
-        const hitchTopY = overheadCeilingY - 0.2;
         const carSheaveY = carY + carH / 2 + 0.6;
-        const machineSheaveY = overheadCeilingY + 0.3;
-
-        drawMultiRope(
-          new THREE.Vector3(-carW * 0.35, hitchTopY, 0),
-          new THREE.Vector3(-carW * 0.35, carSheaveY, 0),
-          "z"
-        );
-        drawMultiRope(
-          new THREE.Vector3(carW * 0.35, carSheaveY, 0),
-          new THREE.Vector3(0, machineSheaveY, -0.2),
-          "z"
-        );
-        drawMultiRope(
-          new THREE.Vector3(0, machineSheaveY, -halfD + 0.65),
-          new THREE.Vector3(-0.4, cwtY + 2.5, -halfD + 0.65),
-          "x"
-        );
-        drawMultiRope(
-          new THREE.Vector3(0.4, cwtY + 2.5, -halfD + 0.65),
-          new THREE.Vector3(0.4, hitchTopY, -halfD + 0.65),
-          "x"
-        );
+        positionRopeMesh(meshes[0], new THREE.Vector3(-carW * 0.35, hitchTopY, 0), new THREE.Vector3(-carW * 0.35, carSheaveY, 0));
+        positionRopeMesh(meshes[1], new THREE.Vector3(carW * 0.35, carSheaveY, 0), new THREE.Vector3(0, overheadSheaveY, -0.2));
+        positionRopeMesh(meshes[2], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.5, cwtPosZ));
+        positionRopeMesh(meshes[3], new THREE.Vector3(cwtPosX, cwtY + 2.5, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ));
+      } else if (suspension === "cantilever_2_1") {
+        positionRopeMesh(meshes[0], new THREE.Vector3(-carW / 2 - 0.1, hitchTopY, 0), new THREE.Vector3(-carW / 2 - 0.1, carY, 0));
+        positionRopeMesh(meshes[1], new THREE.Vector3(-carW / 2 - 0.1, carY, 0), new THREE.Vector3(0, overheadSheaveY, -0.2));
+        positionRopeMesh(meshes[2], new THREE.Vector3(0, overheadSheaveY, -0.2), new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ));
+        positionRopeMesh(meshes[3], new THREE.Vector3(cwtPosX, cwtY + 2.4, cwtPosZ), new THREE.Vector3(cwtPosX, hitchTopY, cwtPosZ));
       } else if (suspension === "hydraulic_2_1") {
-        // Hydraulic 2:1: Anchor in Pit -> Loop over Ram Sheave -> Down to Car Sling Bottom
         const pitAnchorY = pitFloorY + 1.0;
-        const ramHeadY = pitFloorY + 4.5 + 4.0 + 4.0 + (carY / 2); // Ram extends at half car speed!
+        const ramHeadY = pitFloorY + 4.5 + 4.0 + (carY / 2);
         const carBottomY = carY - carH / 2 - 0.2;
-
         if (hydPistonRef.current) {
           hydPistonRef.current.position.y = 4.0 + (carY / 2);
         }
-
-        // Pit Anchor -> Ram Head Sheave
-        drawMultiRope(
-          new THREE.Vector3(-halfW + 0.5, pitAnchorY, 0),
-          new THREE.Vector3(-halfW + 0.5, ramHeadY, 0),
-          "z"
-        );
-
-        // Ram Head Sheave -> Down to Car Bottom Hitch
-        drawMultiRope(
-          new THREE.Vector3(-halfW + 0.9, ramHeadY, 0),
-          new THREE.Vector3(-carW / 2 - 0.1, carBottomY, 0),
-          "z"
-        );
+        positionRopeMesh(meshes[0], new THREE.Vector3(-halfW + 0.5, pitAnchorY, 0), new THREE.Vector3(-halfW + 0.5, ramHeadY, 0));
+        positionRopeMesh(meshes[1], new THREE.Vector3(-halfW + 0.9, ramHeadY, 0), new THREE.Vector3(-carW / 2 - 0.1, carBottomY, 0));
       }
 
-      // Traveling Cable (کابل فرمان آویزان با انحنای طبیعی کاتنری)
-      if (showTravelingCable && travelingCableGroupRef.current) {
-        while (travelingCableGroupRef.current.children.length > 0) {
-          travelingCableGroupRef.current.remove(travelingCableGroupRef.current.children[0]);
+      // Update Traveling Cable
+      if (travelingCableMeshRef.current) {
+        if (showTravelingCable) {
+          const carAnchor = new THREE.Vector3(carW * 0.25, carY - carH / 2 - 0.1, -carD * 0.25);
+          const wallAnchor = new THREE.Vector3(halfW - 0.15, 0, -halfD * 0.2);
+          positionRopeMesh(travelingCableMeshRef.current, carAnchor, wallAnchor);
+        } else {
+          travelingCableMeshRef.current.visible = false;
         }
-
-        const midWallY = 0; // Shaft junction box at mid height
-        const carCableAnchor = new THREE.Vector3(carW * 0.25, carY - carH / 2 - 0.1, -carD * 0.25);
-        const wallCableAnchor = new THREE.Vector3(halfW - 0.15, midWallY, -halfD * 0.2);
-        const loopBottomY = Math.min(carCableAnchor.y, wallCableAnchor.y) - 2.8;
-
-        const curve = new THREE.QuadraticBezierCurve3(
-          carCableAnchor,
-          new THREE.Vector3((carCableAnchor.x + wallCableAnchor.x) / 2, loopBottomY, (carCableAnchor.z + wallCableAnchor.z) / 2),
-          wallCableAnchor
-        );
-
-        const cableGeo = new THREE.TubeGeometry(curve, 24, 0.08, 8, false);
-        const cableMesh = new THREE.Mesh(
-          cableGeo,
-          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 })
-        );
-        travelingCableGroupRef.current.add(cableMesh);
       }
     };
 
@@ -1128,20 +980,16 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
       const travelRange = 13.5;
 
-      // Update position smoothly
       if (isAutoMovingRef.current) {
         const time = clock.getElapsedTime() * (speed * 0.35);
-        const normalized = (Math.sin(time) + 1) / 2; // 0 to 1
+        const normalized = (Math.sin(time) + 1) / 2;
         carPosNormalizedRef.current = normalized;
-      } else {
-        // Static or slider driven
       }
 
       const currentNorm = carPosNormalizedRef.current;
       const carY = (currentNorm - 0.5) * travelRange;
-      const cwtY = -carY; // Counterweight moves opposite
+      const cwtY = -carY;
 
-      // Update Car & Counterweight Meshes directly
       if (carGroupRef.current) {
         carGroupRef.current.position.y = carY;
       }
@@ -1149,7 +997,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         cwtGroupRef.current.position.y = cwtY;
       }
 
-      // Update ropes and traveling cable vertices
       updateRopesAndCables(carY, cwtY);
 
       // Throttled UI Telemetry update (avoids React 60fps render lag!)
@@ -1164,10 +1011,9 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
     animate();
 
-    // Resize Handler
     const handleResize = () => {
       if (!container || !renderer || !camera) return;
-      const w = container.clientWidth;
+      const w = container.clientWidth || 800;
       const h = container.clientHeight || 560;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
@@ -1184,9 +1030,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
     };
-  }, [capacity, suspension, wallMode, showRopes, showDoors, showRefuge, speed, updateCameraPosition, shaftData]);
+  }, [isMounted, capacity, suspension, cwtPosition, wallMode, showRopes, showDoors, showRefuge, speed, updateCameraPosition, shaftData]);
 
-  // Synchronize manual slider with ref
   const handleSliderChange = (newVal: number) => {
     setIsPlaying(false);
     isAutoMovingRef.current = false;
@@ -1195,7 +1040,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     setTelemetryElevation(Math.round(newVal * 100));
   };
 
-  // Jump to floor presets
   const jumpToFloor = (normY: number) => {
     setIsPlaying(false);
     isAutoMovingRef.current = false;
@@ -1205,7 +1049,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   };
 
   const copyDxfData = () => {
-    const dxfSample = `0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nLD_SUSPENSION_${suspension.toUpperCase()}\n10\n0.0\n20\n0.0\n11\n${shaftData.sw}\n21\n${shaftData.sd}\n0\nENDSEC\n0\nEOF`;
+    const dxfSample = `0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nLD_SUSPENSION_${suspension.toUpperCase()}_CWT_${cwtPosition.toUpperCase()}\n10\n0.0\n20\n0.0\n11\n${shaftData.sw}\n21\n${shaftData.sd}\n0\nENDSEC\n0\nEOF`;
     navigator.clipboard.writeText(dxfSample);
     setCopiedDxf(true);
     setTimeout(() => setCopiedDxf(false), 2500);
@@ -1213,7 +1057,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
   return (
     <div className="rounded-2xl border border-vertex-border bg-white shadow-card overflow-hidden">
-      {/* CAD Studio Header */}
+      {/* Studio Header */}
       <div className="bg-slate-900 text-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-vertex-blueprint flex items-center justify-center text-white shadow-sm">
@@ -1230,8 +1074,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {isFa 
-                ? "موتور سه‌بعدی محاسبات انواع سیستم تعلیق، مسیر سیم‌بکسل‌بندی، فلکه‌های هرزگرد، یوک و سینماتیک حرکت" 
-                : "Real-time 3D WebGL kinematics, suspension roping paths, deflector sheaves, and elevator sling anatomy"}
+                ? "موتور سه‌بعدی محاسبات انواع سیستم تعلیق، موقعیت وزنه (پشت/راست/چپ)، مسیر سیم‌بکسل و فلکه‌ها" 
+                : "Real-time 3D kinematics, suspension roping paths, CWT positions (rear/right/left), and deflector sheaves"}
             </p>
           </div>
         </div>
@@ -1291,58 +1135,107 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         </div>
       </div>
 
-      {/* SUSPENSION SELECTOR BAR (انواع سیستم تعلیق) */}
-      <div className="bg-slate-50 border-b border-vertex-border p-3 sm:p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-mono font-bold text-vertex-blueprint uppercase tracking-wider flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5" />
-            <span>{isFa ? "گزینش نوع سیستم تعلیق و سیم‌بکسل‌بندی (Suspension & Roping Systems):" : "Suspension & Roping Configuration:"}</span>
-          </span>
-          <span className="text-[11px] font-mono text-vertex-steel">
-            {isFa ? "استاندارد EN 81-50 / مبحث ۱۵" : "EN 81-50 Certified"}
-          </span>
+      {/* DUAL SELECTOR BAR: 1) SUSPENSION TYPES + 2) COUNTERWEIGHT POSITIONS */}
+      <div className="bg-slate-50 border-b border-vertex-border p-3 sm:p-4 space-y-3">
+        {/* Row 1: Suspension Types */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-mono font-bold text-vertex-blueprint uppercase tracking-wider flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" />
+              <span>{isFa ? "۱. گزینش نوع سیستم تعلیق و سیم‌بکسل‌بندی:" : "1. Suspension & Roping Configuration:"}</span>
+            </span>
+            <span className="text-[11px] font-mono text-vertex-steel">
+              {isFa ? "استاندارد EN 81-50 / مبحث ۱۵" : "EN 81-50 Certified"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {(Object.keys(SUSPENSION_CONFIGS) as SuspensionType[]).map((suspKey) => {
+              const item = SUSPENSION_CONFIGS[suspKey];
+              const isSelected = suspension === suspKey;
+              return (
+                <button
+                  key={suspKey}
+                  onClick={() => setSuspension(suspKey)}
+                  className={cn(
+                    "p-2.5 rounded-xl border text-right transition-all flex flex-col justify-between text-xs",
+                    isSelected
+                      ? "bg-white border-vertex-blueprint ring-2 ring-vertex-blueprint/20 shadow-sm"
+                      : "bg-white/80 hover:bg-white border-vertex-border text-vertex-secondary hover:text-vertex-primary"
+                  )}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span 
+                        className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black"
+                        style={{ 
+                          backgroundColor: isSelected ? `${item.color}20` : '#f1f5f9',
+                          color: isSelected ? item.color : '#475569' 
+                        }}
+                      >
+                        {item.ratio}
+                      </span>
+                      {isSelected && <span className="w-2 h-2 rounded-full bg-vertex-blueprint animate-ping" />}
+                    </div>
+                    <div className="font-bold text-[11px] text-vertex-primary line-clamp-1">
+                      {isFa ? item.nameFa.split("(")[0].trim() : item.nameEn.split("(")[0].trim()}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-vertex-steel font-mono mt-1 pt-1 border-t border-slate-100 flex items-center justify-between">
+                    <span>{item.sheaveCount} فلکه</span>
+                    <span>{item.torqueFactor.split("(")[0].replace("گشتاور نامی", "").trim()}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-          {(Object.keys(SUSPENSION_CONFIGS) as SuspensionType[]).map((suspKey) => {
-            const item = SUSPENSION_CONFIGS[suspKey];
-            const isSelected = suspension === suspKey;
-            return (
+        {/* Row 2: Counterweight Position Selector */}
+        {suspension !== "hydraulic_2_1" && (
+          <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs font-mono font-bold text-slate-700 flex items-center gap-1.5">
+              <MoveHorizontal className="w-3.5 h-3.5 text-vertex-blueprint" />
+              <span>{isFa ? "۲. موقعیت استقرار قاب وزنه تعادل (Counterweight Placement):" : "2. Counterweight Location:"}</span>
+            </span>
+
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white border border-slate-300 text-xs font-mono">
               <button
-                key={suspKey}
-                onClick={() => setSuspension(suspKey)}
+                onClick={() => setCwtPosition("rear")}
                 className={cn(
-                  "p-2.5 rounded-xl border text-right transition-all flex flex-col justify-between text-xs",
-                  isSelected
-                    ? "bg-white border-vertex-blueprint ring-2 ring-vertex-blueprint/20 shadow-sm"
-                    : "bg-white/80 hover:bg-white border-vertex-border text-vertex-secondary hover:text-vertex-primary"
+                  "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+                  cwtPosition === "rear" 
+                    ? "bg-slate-900 text-white shadow-sm" 
+                    : "text-slate-600 hover:text-slate-900"
                 )}
               >
-                <div>
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span 
-                      className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black"
-                      style={{ 
-                        backgroundColor: isSelected ? `${item.color}20` : '#f1f5f9',
-                        color: isSelected ? item.color : '#475569' 
-                      }}
-                    >
-                      {item.ratio}
-                    </span>
-                    {isSelected && <span className="w-2 h-2 rounded-full bg-vertex-blueprint animate-ping" />}
-                  </div>
-                  <div className="font-bold text-[11px] text-vertex-primary line-clamp-1">
-                    {isFa ? item.nameFa.split("(")[0].trim() : item.nameEn.split("(")[0].trim()}
-                  </div>
-                </div>
-                <div className="text-[10px] text-vertex-steel font-mono mt-1 pt-1 border-t border-slate-100 flex items-center justify-between">
-                  <span>{item.sheaveCount} فلکه</span>
-                  <span>{item.torqueFactor.split("(")[0].replace("گشتاور نامی", "").trim()}</span>
-                </div>
+                <span>{isFa ? "وزنه پشت چاهک (Rear CWT)" : "Rear Wall"}</span>
               </button>
-            );
-          })}
-        </div>
+              <button
+                onClick={() => setCwtPosition("right")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+                  cwtPosition === "right" 
+                    ? "bg-slate-900 text-white shadow-sm" 
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                <span>{isFa ? "وزنه بغل راست (Right CWT)" : "Right Side"}</span>
+              </button>
+              <button
+                onClick={() => setCwtPosition("left")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+                  cwtPosition === "left" 
+                    ? "bg-slate-900 text-white shadow-sm" 
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                <span>{isFa ? "وزنه بغل چپ (Left CWT)" : "Left Side"}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main CAD Interactive Canvas Area */}
@@ -1350,7 +1243,14 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         {/* Left Side: Three.js Canvas */}
         <div className="lg:col-span-3 relative h-[500px] sm:h-[580px] bg-slate-100 overflow-hidden border-b lg:border-b-0 lg:border-r border-vertex-border">
           {/* Three.js viewport */}
-          <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+          <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing">
+            {!isMounted && (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-white gap-3 font-mono">
+                <Loader2 className="w-8 h-8 animate-spin text-vertex-blueprint" />
+                <span className="text-xs text-slate-300">INITIALIZING 3D WEBGL CAD ENGINE...</span>
+              </div>
+            )}
+          </div>
 
           {/* Floating Canvas Live Telemetry Badges */}
           <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
@@ -1368,8 +1268,11 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
                 <span className="font-bold text-emerald-600">{speed.toFixed(1)} m/s</span>
               </div>
               <div className="text-[11px] text-vertex-secondary font-mono flex items-center justify-between gap-3">
-                <span className="text-vertex-steel">{isFa ? "نسبت تعلیق:" : "Roping Ratio:"}</span>
-                <span className="font-bold text-vertex-primary">{activeSpec.ratio}</span>
+                <span className="text-vertex-steel">{isFa ? "آرایش وزنه تعادل:" : "CWT Position:"}</span>
+                <span className="font-bold text-vertex-primary">
+                  {cwtPosition === "rear" ? (isFa ? "پشت چاهک" : "Rear") :
+                   cwtPosition === "right" ? (isFa ? "بغل راست" : "Right") : (isFa ? "بغل چپ" : "Left")}
+                </span>
               </div>
             </div>
           </div>
@@ -1464,6 +1367,13 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
                 <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
                   <span className="text-vertex-steel">{isFa ? "تعداد فلکه‌ها:" : "Sheave Count:"}</span>
                   <span className="font-bold text-vertex-primary">{activeSpec.sheaveCount} عدد</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="text-vertex-steel">{isFa ? "موقعیت وزنه:" : "CWT Position:"}</span>
+                  <span className="font-bold text-vertex-blueprint">
+                    {cwtPosition === "rear" ? (isFa ? "پشت چاهک" : "Rear Wall") :
+                     cwtPosition === "right" ? (isFa ? "دیواره راست" : "Right Wall") : (isFa ? "دیواره چپ" : "Left Wall")}
+                  </span>
                 </div>
               </div>
 

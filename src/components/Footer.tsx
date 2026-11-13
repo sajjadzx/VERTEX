@@ -3,6 +3,7 @@
 import React from "react";
 import NextLink from "next/link";
 import { Locale, dictionary } from "@/lib/dictionary";
+import { cn } from "@/lib/utils";
 import { 
   ShieldCheck, 
   Award, 
@@ -43,7 +44,7 @@ export function Footer({ locale }: FooterProps) {
   ];
 
   return (
-    <footer className="bg-white border-t border-vertex-border text-vertex-secondary font-sans relative overflow-hidden">
+    <footer className={cn("bg-white border-t border-vertex-border text-vertex-secondary relative overflow-hidden", isFa ? "font-vazir" : "font-sans")}>
       {/* Top Accent Line */}
       <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-vertex-blueprint to-transparent opacity-75" />
 
