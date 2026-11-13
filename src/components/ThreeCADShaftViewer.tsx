@@ -171,7 +171,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const [speed, setSpeed] = useState<number>(2.0); // m/s
   const [suspension, setSuspension] = useState<SuspensionType>("2_1_underslung");
   const [cwtPosition, setCwtPosition] = useState<CounterweightPosition>("rear");
-  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves">("3d");
+  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin">("3d");
   const [wallMode, setWallMode] = useState<"cutaway" | "transparent" | "wireframe">("cutaway");
   const [activeSideTab, setActiveSideTab] = useState<"kinematics" | "calculations" | "heights" | "standards">("kinematics");
 
@@ -304,6 +304,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       cameraOrbitRef.current = { theta: 0, phi: 0.05, radius: 28, targetY: 2 };
     } else if (viewMode === "sheaves") {
       cameraOrbitRef.current = { theta: 0.45, phi: 0.65, radius: 15, targetY: 10 };
+    } else if (viewMode === "cabin") {
+      cameraOrbitRef.current = { theta: 0.2, phi: 1.45, radius: 4.5, targetY: currentYRef.current };
     }
     updateCameraPosition();
   }, [viewMode, updateCameraPosition]);
@@ -829,50 +831,198 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       carGroup.add(pBlock);
     });
 
-    // Cabin Enclosure
-    const cabinShell = new THREE.Mesh(
-      new THREE.BoxGeometry(carW, carH, carD),
-      new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.85, roughness: 0.2 })
-    );
-    cabinShell.castShadow = true;
-    carGroup.add(cabinShell);
+    // ==============================================================
+    // DETAILED 3D ARCHITECTURAL CABIN DESIGN (طراحی سه‌بعدی کامل و لوکس کابین)
+    // ==============================================================
+    const cabinGroup = new THREE.Group();
 
-    // Rear Mirror
-    const rearGlass = new THREE.Mesh(
-      new THREE.BoxGeometry(carW - 0.4, carH - 0.4, 0.02),
-      new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.2, roughness: 0.1, transparent: true, opacity: 0.45 })
-    );
-    rearGlass.position.set(0, 0, -carD / 2 - 0.01);
-    carGroup.add(rearGlass);
+    // Materials
+    const wallStainlessMat = new THREE.MeshStandardMaterial({ 
+      color: 0xe2e8f0, 
+      metalness: 0.9, 
+      roughness: 0.25 
+    });
+    const wallAccentMat = new THREE.MeshStandardMaterial({ 
+      color: 0xd4af37, // Titanium Gold Mirror Accent
+      metalness: 0.95, 
+      roughness: 0.15 
+    });
+    const marbleFloorMat = new THREE.MeshStandardMaterial({ 
+      color: 0xf8fafc, 
+      roughness: 0.2 
+    });
+    const borderFloorMat = new THREE.MeshStandardMaterial({ 
+      color: 0x1e293b, 
+      roughness: 0.3 
+    });
+    const ceilingMat = new THREE.MeshStandardMaterial({ 
+      color: 0x0f172a, 
+      metalness: 0.85, 
+      roughness: 0.2 
+    });
+    const mirrorGlassMat = new THREE.MeshStandardMaterial({ 
+      color: 0xbae6fd, 
+      metalness: 0.98, 
+      roughness: 0.05 
+    });
+    const handrailMat = new THREE.MeshStandardMaterial({ 
+      color: 0xf1f5f9, 
+      metalness: 0.95, 
+      roughness: 0.15 
+    });
 
-    // Cabin Floor (Carrara Marble)
-    const floorMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(carW - 0.1, 0.08, carD - 0.1),
-      new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.25 })
-    );
-    floorMesh.position.set(0, -carH / 2 + 0.05, 0);
-    carGroup.add(floorMesh);
-
-    // Interior Warm LED Glow
-    const interiorLight = new THREE.PointLight(0xfffbeb, 1.8, 4.5);
-    interiorLight.position.set(0, carH / 2 - 0.3, 0);
-    carGroup.add(interiorLight);
-
-    // Roof Inspection Box & Yellow Safety Handrail
-    const inspBox = new THREE.Mesh(
-      new THREE.BoxGeometry(0.5, 0.35, 0.35),
-      new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6 })
-    );
-    inspBox.position.set(carW * 0.25, carH / 2 + 0.25, carD * 0.2);
+    // 1) FLOOR SLAB & POLISHED MARBLE WITH BORDER (کفپوش سنگ اسلب با قاب)
+    const floorBase = new THREE.Mesh(new THREE.BoxGeometry(carW - 0.04, 0.08, carD - 0.04), borderFloorMat);
+    floorBase.position.set(0, -carH / 2 + 0.04, 0);
+    const floorCenter = new THREE.Mesh(new THREE.BoxGeometry(carW - 0.25, 0.02, carD - 0.25), marbleFloorMat);
+    floorCenter.position.set(0, -carH / 2 + 0.081, 0);
     
-    const handrail = new THREE.Mesh(
-      new THREE.BoxGeometry(carW - 0.4, 0.6, carD - 0.4),
-      new THREE.MeshStandardMaterial({ color: 0xeab308, wireframe: true })
+    // Aluminum Entrance Sill with Guidance Tracks
+    const doorSill = new THREE.Mesh(
+      new THREE.BoxGeometry(carW * 0.9, 0.03, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 })
     );
-    handrail.position.set(0, carH / 2 + 0.45, 0);
-    carGroup.add(inspBox, handrail);
+    doorSill.position.set(0, -carH / 2 + 0.085, carD / 2 + 0.04);
+    cabinGroup.add(floorBase, floorCenter, doorSill);
 
-    // Automatic Car Door Operator Header (موتور درب کابین فرماتور با تسمه)
+    // 2) LEFT & RIGHT WALLS (دیواره‌های چپ و راست استیل ماژولار)
+    const wallThick = 0.04;
+    const wallL = new THREE.Mesh(new THREE.BoxGeometry(wallThick, carH - 0.1, carD - 0.08), wallStainlessMat);
+    wallL.position.set(-carW / 2 + wallThick / 2 + 0.02, 0, 0);
+    const wallR = new THREE.Mesh(new THREE.BoxGeometry(wallThick, carH - 0.1, carD - 0.08), wallStainlessMat);
+    wallR.position.set(carW / 2 - wallThick / 2 - 0.02, 0, 0);
+    cabinGroup.add(wallL, wallR);
+
+    // 3) REAR WALL WITH TITANIUM ACCENTS (دیواره عقب با نوارهای استیل طلایی)
+    const wallBack = new THREE.Mesh(new THREE.BoxGeometry(carW - 0.08, carH - 0.1, wallThick), wallStainlessMat);
+    wallBack.position.set(0, 0, -carD / 2 + wallThick / 2 + 0.02);
+    
+    // Gold Accent Stripes on Back Wall
+    [-carW * 0.38, carW * 0.38].forEach(ax => {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.08, carH - 0.15, 0.01), wallAccentMat);
+      stripe.position.set(ax, 0, -carD / 2 + wallThick + 0.01);
+      cabinGroup.add(stripe);
+    });
+    cabinGroup.add(wallBack);
+
+    // 4) REAR WALL FULL-HEIGHT POLISHED MIRROR (آینه قدی با فریم)
+    const mirrorMesh = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.55, carH * 0.72, 0.015), mirrorGlassMat);
+    mirrorMesh.position.set(0, carH * 0.08, -carD / 2 + wallThick + 0.015);
+    const mirrorFrame = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.57, carH * 0.74, 0.01), wallAccentMat);
+    mirrorFrame.position.set(0, carH * 0.08, -carD / 2 + wallThick + 0.01);
+    cabinGroup.add(mirrorFrame, mirrorMesh);
+
+    // 5) ERGONOMIC TUBULAR STAINLESS HANDRAIL (دستگیره لوله‌ای استیل)
+    const handrailGeo = new THREE.CylinderGeometry(0.022, 0.022, carW * 0.65, 16);
+    const hrMesh = new THREE.Mesh(handrailGeo, handrailMat);
+    hrMesh.rotation.z = Math.PI / 2;
+    hrMesh.position.set(0, -carH * 0.1, -carD / 2 + wallThick + 0.08);
+    // Standoff Mounts
+    [-carW * 0.28, carW * 0.28].forEach(hx => {
+      const mount = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.06, 8), handrailMat);
+      mount.rotation.x = Math.PI / 2;
+      mount.position.set(hx, -carH * 0.1, -carD / 2 + wallThick + 0.04);
+      cabinGroup.add(mount);
+    });
+    cabinGroup.add(hrMesh);
+
+    // 6) CAR OPERATING PANEL - COP (شستی احضار داخل کابین تمام‌قد با نمایشگر TFT)
+    const copCol = new THREE.Mesh(new THREE.BoxGeometry(0.02, carH * 0.82, 0.3), wallStainlessMat);
+    copCol.position.set(carW / 2 - wallThick - 0.01, 0, carD * 0.15);
+    
+    // Digital Floor Indicator Screen (LCD/TFT Blue Display)
+    const copLcd = new THREE.Mesh(
+      new THREE.BoxGeometry(0.022, 0.16, 0.22),
+      new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+    );
+    copLcd.position.set(carW / 2 - wallThick - 0.011, carH * 0.28, carD * 0.15);
+
+    // Push Buttons Matrix (G, 1, 2, 3, Doors, Alarm)
+    const btnMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    for (let bRow = 0; bRow < 4; bRow++) {
+      [-0.05, 0.05].forEach(bz => {
+        const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.01, 12), btnMat);
+        btn.rotation.z = Math.PI / 2;
+        btn.position.set(carW / 2 - wallThick - 0.015, carH * 0.12 - bRow * 0.08, carD * 0.15 + bz);
+        cabinGroup.add(btn);
+      });
+    }
+    cabinGroup.add(copCol, copLcd);
+
+    // 7) FALSE CEILING & DOWNLIGHTS WITH REAL LIGHT EMISSION (سقف کاذب معرق با هالوژن)
+    const ceilingCanopy = new THREE.Mesh(new THREE.BoxGeometry(carW - 0.04, 0.06, carD - 0.04), ceilingMat);
+    ceilingCanopy.position.set(0, carH / 2 - 0.03, 0);
+    
+    // Laser-cut inner ceiling panel
+    const innerCeiling = new THREE.Mesh(
+      new THREE.BoxGeometry(carW - 0.2, 0.02, carD - 0.2),
+      wallAccentMat
+    );
+    innerCeiling.position.set(0, carH / 2 - 0.07, 0);
+    cabinGroup.add(ceilingCanopy, innerCeiling);
+
+    // 4 LED Recessed Spotlights
+    const spotMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
+    [-carW * 0.25, carW * 0.25].forEach(sx => {
+      [-carD * 0.25, carD * 0.25].forEach(sz => {
+        const spot = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.01, 16), spotMat);
+        spot.position.set(sx, carH / 2 - 0.075, sz);
+        cabinGroup.add(spot);
+      });
+    });
+
+    // Real Warm Interior Illumination
+    const interiorLight = new THREE.PointLight(0xfff7ed, 2.2, 5.0);
+    interiorLight.position.set(0, carH / 2 - 0.4, 0);
+    cabinGroup.add(interiorLight);
+
+    // 8) UNDER-CAR STEEL TOE GUARD APRON (سینی زیر درب کابین ۷۵ سانتی‌متری طبق ۶۳۰۳)
+    const apronMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8, roughness: 0.3 });
+    const toeGuardApron = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.9, 0.75, 0.02), apronMat);
+    toeGuardApron.position.set(0, -carH / 2 - 0.38, carD / 2 + 0.04);
+    cabinGroup.add(toeGuardApron);
+
+    // 9) CAR TOP SAFETY BALUSTRADE RAILING (نرده حفاظ سقف کابین ۷۰ سانتی‌متری)
+    const railTubeMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.7 });
+    const balustradeGroup = new THREE.Group();
+    // Top rails
+    const balBack = new THREE.Mesh(new THREE.BoxGeometry(carW - 0.3, 0.04, 0.04), railTubeMat);
+    balBack.position.set(0, carH / 2 + 0.7, -carD / 2 + 0.15);
+    const balLeft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, carD - 0.4), railTubeMat);
+    balLeft.position.set(-carW / 2 + 0.15, carH / 2 + 0.7, -0.05);
+    const balRight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, carD - 0.4), railTubeMat);
+    balRight.position.set(carW / 2 - 0.15, carH / 2 + 0.7, -0.05);
+    // Vertical Posts
+    [
+      [-carW / 2 + 0.15, -carD / 2 + 0.15],
+      [carW / 2 - 0.15, -carD / 2 + 0.15],
+      [-carW / 2 + 0.15, carD / 2 - 0.25],
+      [carW / 2 - 0.15, carD / 2 - 0.25]
+    ].forEach(([px, pz]) => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 8), railTubeMat);
+      post.position.set(px, carH / 2 + 0.35, pz);
+      balustradeGroup.add(post);
+    });
+    balustradeGroup.add(balBack, balLeft, balRight);
+    cabinGroup.add(balustradeGroup);
+
+    // 10) CAR TOP INSPECTION STATION (جعبه رویزیون با کلید قارچی استپ قرمز)
+    const inspBox = new THREE.Mesh(
+      new THREE.BoxGeometry(0.35, 0.25, 0.25),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5 })
+    );
+    inspBox.position.set(carW * 0.25, carH / 2 + 0.18, -carD * 0.15);
+    const stopBtn = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 0.04, 16),
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 })
+    );
+    stopBtn.position.set(carW * 0.25, carH / 2 + 0.32, -carD * 0.15);
+    cabinGroup.add(inspBox, stopBtn);
+
+    // Add Complete Architectural Cabin to Car Group
+    carGroup.add(cabinGroup);
+
+    // Automatic Car Door Operator Header (موتور درب کابین با تسمه)
     const opBox = new THREE.Mesh(
       new THREE.BoxGeometry(carW * 0.85, 0.25, 0.2),
       new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
@@ -890,24 +1040,31 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     carDoorLRef.current = cDoorL;
     carDoorRRef.current = cDoorR;
 
-    // Suspension Sheaves on Car (for 2:1 & 4:1)
+    // PHYSICAL SUSPENSION SHEAVES ON CAR (فلکه‌های فیزیکی زیر کفی و روی یوک ۲:۱)
     const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
+    const sheaveCoverMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8 });
+
     if (suspension === "2_1_underslung") {
-      const uSheave1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 32), sheaveMat);
-      uSheave1.rotation.z = Math.PI / 2;
-      uSheave1.position.set(-carW / 2 + 0.2, -carH / 2 - 0.4, 0);
-      const uSheave2 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 32), sheaveMat);
-      uSheave2.rotation.z = Math.PI / 2;
-      uSheave2.position.set(carW / 2 - 0.2, -carH / 2 - 0.4, 0);
-      carGroup.add(uSheave1, uSheave2);
+      // 2 Underslung Pulleys under the car platform with yellow protective covers
+      [-carW / 2 + 0.25, carW / 2 - 0.25].forEach(sx => {
+        const uSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.18, 32), sheaveMat);
+        uSheave.rotation.x = Math.PI / 2;
+        uSheave.position.set(sx, -carH / 2 - 0.28, 0);
+        // Protective yellow casing
+        const cover = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.35, 0.65), sheaveCoverMat);
+        cover.position.set(sx, -carH / 2 - 0.28, 0);
+        carGroup.add(uSheave, cover);
+      });
     } else if (suspension === "2_1_overslung") {
-      const oSheave1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 32), sheaveMat);
-      oSheave1.rotation.z = Math.PI / 2;
-      oSheave1.position.set(-carW * 0.35, carH / 2 + 0.55, 0);
-      const oSheave2 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 32), sheaveMat);
-      oSheave2.rotation.z = Math.PI / 2;
-      oSheave2.position.set(carW * 0.35, carH / 2 + 0.55, 0);
-      carGroup.add(oSheave1, oSheave2);
+      // 2 Overslung Pulleys mounted on the upper crosshead beam
+      [-carW * 0.35, carW * 0.35].forEach(sx => {
+        const oSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.18, 32), sheaveMat);
+        oSheave.rotation.x = Math.PI / 2;
+        oSheave.position.set(sx, carH / 2 + 0.52, 0);
+        const cover = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.35, 0.65), sheaveCoverMat);
+        cover.position.set(sx, carH / 2 + 0.52, 0);
+        carGroup.add(oSheave, cover);
+      });
     }
 
     scene.add(carGroup);
@@ -1092,68 +1249,161 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
           );
         }
       } else if (suspension === "2_1_underslung") {
-        const pBottomY = carY - carH / 2 - 0.35;
+        const pBottomY = carY - carH / 2 - 0.28;
+        const rSheave = 0.25;
+        
         for (let i = 0; i < ropeOffsets.length && meshIdx + 4 < meshes.length; i++) {
           const off = ropeOffsets[i];
-          const hitchX = -carW / 2 + 0.2 + off;
-          const sheave2X = carW / 2 - 0.2 + off;
-          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
-          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+          const hitchX = -carW / 2;
+          const carRopeZ = off;
+          
+          let cwtTangentInX = cwtPosX + off;
+          let cwtTangentInZ = cwtPosition === "rear" ? cwtPosZ + rSheave : cwtPosZ + off;
+          let cwtTangentOutX = cwtPosX + off;
+          let cwtTangentOutZ = cwtPosition === "rear" ? cwtPosZ - rSheave : cwtPosZ + off;
 
-          // Fall 1: Ceiling dead-end hitch down to Car Sheave 1
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, 0), new THREE.Vector3(hitchX, pBottomY, 0), showRopes);
-          // Fall 2: Under car platform from Sheave 1 to Sheave 2
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, pBottomY - 0.12, 0), new THREE.Vector3(sheave2X, pBottomY - 0.12, 0), showRopes);
-          // Fall 3: From Sheave 2 up to Traction Sheave
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, pBottomY, 0), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
-          // Fall 4: Traction sheave across to CWT Sheave
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), showRopes);
-          // Fall 5: CWT Sheave back up to Ceiling CWT hitch
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+          if (cwtPosition === "right") {
+            cwtTangentInX = cwtPosX - rSheave;
+            cwtTangentInZ = cwtPosZ + off;
+            cwtTangentOutX = cwtPosX + rSheave;
+            cwtTangentOutZ = cwtPosZ + off;
+          } else if (cwtPosition === "left") {
+            cwtTangentInX = cwtPosX + rSheave;
+            cwtTangentInZ = cwtPosZ + off;
+            cwtTangentOutX = cwtPosX - rSheave;
+            cwtTangentOutZ = cwtPosZ + off;
+          }
+
+          // Fall 1: Strictly vertical drop from Ceiling Hitch 1 down to Car Pulley 1 outer tangent
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(hitchX, hitchTopY, carRopeZ),
+            new THREE.Vector3(hitchX, pBottomY, carRopeZ),
+            showRopes
+          );
+
+          // Fall 2: Strictly horizontal run underneath car floor between bottom tangents
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(-carW / 2 + 0.25, pBottomY - rSheave, carRopeZ),
+            new THREE.Vector3(carW / 2 - 0.25, pBottomY - rSheave, carRopeZ),
+            showRopes
+          );
+
+          // Fall 3: Strictly vertical/tangent ascent from Car Pulley 2 up to Traction Sheave
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(carW / 2, pBottomY, carRopeZ),
+            new THREE.Vector3(off, overheadSheaveY, -0.2),
+            showRopes
+          );
+
+          // Fall 4: Traction sheave across to CWT Sheave incoming tangent
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(off, overheadSheaveY, -0.2),
+            new THREE.Vector3(cwtTangentInX, cwtY + 2.5, cwtTangentInZ),
+            showRopes
+          );
+
+          // Fall 5: Strictly vertical ascent from CWT Sheave outgoing tangent up to Ceiling Hitch 2
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(cwtTangentOutX, cwtY + 2.5, cwtTangentOutZ),
+            new THREE.Vector3(cwtTangentOutX, hitchTopY, cwtTangentOutZ),
+            showRopes
+          );
         }
       } else if (suspension === "2_1_overslung") {
-        const carSheaveY = carY + carH / 2 + 0.55;
+        const carSheaveY = carY + carH / 2 + 0.52;
+        const rSheave = 0.25;
+
         for (let i = 0; i < ropeOffsets.length && meshIdx + 4 < meshes.length; i++) {
           const off = ropeOffsets[i];
-          const hitchX = -carW * 0.35 + off;
-          const sheave2X = carW * 0.35 + off;
-          const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
-          const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
+          const hitchX = -carW * 0.35 - rSheave;
+          const carRopeZ = off;
 
-          // Fall 1: Ceiling hitch 1 down to Car top sheave 1
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, 0), new THREE.Vector3(hitchX, carSheaveY, 0), showRopes);
-          // Fall 2: Across car top crosshead
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, carSheaveY + 0.15, 0), new THREE.Vector3(sheave2X, carSheaveY + 0.15, 0), showRopes);
-          // Fall 3: From Sheave 2 up to Traction sheave
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, carSheaveY, 0), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
-          // Fall 4: Traction sheave to CWT sheave
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), showRopes);
-          // Fall 5: CWT sheave up to Ceiling hitch 2
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.45, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+          let cwtTangentInX = cwtPosX + off;
+          let cwtTangentInZ = cwtPosition === "rear" ? cwtPosZ + rSheave : cwtPosZ + off;
+          let cwtTangentOutX = cwtPosX + off;
+          let cwtTangentOutZ = cwtPosition === "rear" ? cwtPosZ - rSheave : cwtPosZ + off;
+
+          if (cwtPosition === "right") {
+            cwtTangentInX = cwtPosX - rSheave;
+            cwtTangentInZ = cwtPosZ + off;
+            cwtTangentOutX = cwtPosX + rSheave;
+            cwtTangentOutZ = cwtPosZ + off;
+          } else if (cwtPosition === "left") {
+            cwtTangentInX = cwtPosX + rSheave;
+            cwtTangentInZ = cwtPosZ + off;
+            cwtTangentOutX = cwtPosX - rSheave;
+            cwtTangentOutZ = cwtPosZ + off;
+          }
+
+          // Fall 1: Strictly vertical drop from Ceiling Hitch 1 down to Car Pulley 1 outer tangent
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(hitchX, hitchTopY, carRopeZ),
+            new THREE.Vector3(hitchX, carSheaveY, carRopeZ),
+            showRopes
+          );
+
+          // Fall 2: Strictly horizontal run over crosshead between top tangents of Pulleys
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(-carW * 0.35, carSheaveY + rSheave, carRopeZ),
+            new THREE.Vector3(carW * 0.35, carSheaveY + rSheave, carRopeZ),
+            showRopes
+          );
+
+          // Fall 3: Ascent from Car Pulley 2 right tangent up to Traction Sheave
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(carW * 0.35 + rSheave, carSheaveY, carRopeZ),
+            new THREE.Vector3(off, overheadSheaveY, -0.2),
+            showRopes
+          );
+
+          // Fall 4: Traction sheave across to CWT Sheave incoming tangent
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(off, overheadSheaveY, -0.2),
+            new THREE.Vector3(cwtTangentInX, cwtY + 2.5, cwtTangentInZ),
+            showRopes
+          );
+
+          // Fall 5: Strictly vertical ascent from CWT Sheave outgoing tangent up to Ceiling Hitch 2
+          positionCylinder(
+            meshes[meshIdx++],
+            new THREE.Vector3(cwtTangentOutX, cwtY + 2.5, cwtTangentOutZ),
+            new THREE.Vector3(cwtTangentOutX, hitchTopY, cwtTangentOutZ),
+            showRopes
+          );
         }
       } else if (suspension === "4_1_heavy_duty") {
-        const carSheaveY = carY + carH / 2 + 0.6;
+        const carSheaveY = carY + carH / 2 + 0.55;
+        const rSheave = 0.22;
         for (let i = 0; i < ropeOffsets.length && meshIdx + 3 < meshes.length; i++) {
           const off = ropeOffsets[i];
-          const hitchX = -carW * 0.35 + off;
-          const sheave2X = carW * 0.35 + off;
+          const hitchX = -carW * 0.35 - rSheave;
+          const sheave2X = carW * 0.35 + rSheave;
           const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
           const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
 
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, 0), new THREE.Vector3(hitchX, carSheaveY, 0), showRopes);
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, carSheaveY, 0), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ), showRopes);
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(hitchX, hitchTopY, off), new THREE.Vector3(hitchX, carSheaveY, off), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(sheave2X, carSheaveY, off), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ + 0.2), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ - 0.2), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ - 0.2), showRopes);
         }
       } else if (suspension === "cantilever_2_1") {
         for (let i = 0; i < ropeOffsets.length && meshIdx + 3 < meshes.length; i++) {
           const off = ropeOffsets[i];
           const cwtRopeX = cwtPosition === "rear" ? cwtPosX + off : cwtPosX;
           const cwtRopeZ = cwtPosition === "rear" ? cwtPosZ : cwtPosZ + off;
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-carW / 2 - 0.1, hitchTopY, off), new THREE.Vector3(-carW / 2 - 0.1, carY, off), showRopes);
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-carW / 2 - 0.1, carY, off), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.4, cwtRopeZ), showRopes);
-          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.4, cwtRopeZ), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-carW / 2 - 0.15, hitchTopY, off), new THREE.Vector3(-carW / 2 - 0.15, carY, off), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(-carW / 2 - 0.15, carY, off), new THREE.Vector3(off, overheadSheaveY, -0.2), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(off, overheadSheaveY, -0.2), new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ + 0.2), showRopes);
+          positionCylinder(meshes[meshIdx++], new THREE.Vector3(cwtRopeX, cwtY + 2.5, cwtRopeZ - 0.2), new THREE.Vector3(cwtRopeX, hitchTopY, cwtRopeZ - 0.2), showRopes);
         }
       } else if (suspension === "hydraulic_2_1") {
         const pitAnchorY = pitFloorY + 1.0;
@@ -1459,6 +1709,17 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{isFa ? "موتور و فلکه‌ها" : "Machine"}</span>
+          </button>
+          <button
+            onClick={() => setViewMode("cabin")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+              viewMode === "cabin" ? "bg-amber-600 text-white shadow-sm font-black" : "text-amber-400 hover:text-amber-300"
+            )}
+            title={isFa ? "اینسپکشن و مشاهده ۳ بعدی داخل کابین، سنگ اسلب، آینه و شستی" : "3D Cabin Interior Inspection"}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>{isFa ? "طراحی داخل کابین ۳D" : "Cabin 3D"}</span>
           </button>
         </div>
       </div>

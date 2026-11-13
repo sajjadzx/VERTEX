@@ -24,19 +24,20 @@ import { LiftDesignerCADStudio } from "./LiftDesignerCADStudio";
 import { ThreeCADShaftViewer } from "./ThreeCADShaftViewer";
 import { ElevatorMaterialBOMTable } from "./ElevatorMaterialBOMTable";
 import { TractionCalculator } from "./TractionCalculator";
+import { ProjectMaterialEstimator } from "./ProjectMaterialEstimator";
 
 export interface LiftDesignerUnifiedWorkspaceProps {
   locale: Locale | string;
 }
 
-export type WorkspaceTab = "dwg" | "3d" | "bom" | "calculations" | "split";
+export type WorkspaceTab = "estimator" | "3d" | "dwg" | "bom" | "calculations" | "split";
 
 export function LiftDesignerUnifiedWorkspace({ locale }: LiftDesignerUnifiedWorkspaceProps) {
   const currentLocale: Locale = locale === "fa" ? "fa" : "en";
   const isFa = currentLocale === "fa";
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("dwg");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("estimator");
 
   // Synchronized Global Parameters
   const [capacity, setCapacity] = useState<number>(630); // 8 passengers
@@ -46,6 +47,20 @@ export function LiftDesignerUnifiedWorkspace({ locale }: LiftDesignerUnifiedWork
 
   const tabs = [
     {
+      id: "estimator" as WorkspaceTab,
+      labelFa: "محاسبات پروژه و پیش‌فاکتور ایران",
+      labelEn: "Project Estimator & Quotation",
+      icon: FileSpreadsheet,
+      badge: isFa ? "مشخصات کارفرما و متریال" : "Project RFQ"
+    },
+    {
+      id: "3d" as WorkspaceTab,
+      labelFa: "شبیه‌ساز ۳D چاه و طراحی کابین",
+      labelEn: "3D BIM & Cabin Design",
+      icon: Box,
+      badge: isFa ? "حرکت، کابین و بکسل" : "Kinematics & Cabin"
+    },
+    {
       id: "dwg" as WorkspaceTab,
       labelFa: "نقشه‌کشی دوبعدی (CAD DWG)",
       labelEn: "2D CAD Studio (DWG)",
@@ -53,18 +68,11 @@ export function LiftDesignerUnifiedWorkspace({ locale }: LiftDesignerUnifiedWork
       badge: isFa ? "پلان و مقطع اتوکد" : "Plan & Section"
     },
     {
-      id: "3d" as WorkspaceTab,
-      labelFa: "شبیه‌ساز سه‌بعدی و حرکت (3D BIM)",
-      labelEn: "3D BIM & Kinematics",
-      icon: Box,
-      badge: isFa ? "حرکت، درب‌ها و بکسل" : "Kinematics & Ropes"
-    },
-    {
       id: "bom" as WorkspaceTab,
-      labelFa: "جدول صورت متریال و قطعات (BOM)",
-      labelEn: "Material BOM & Sizing",
-      icon: FileSpreadsheet,
-      badge: isFa ? "لیست کامل قطعات" : "DigiPara Database"
+      labelFa: "جدول صورت متریال (BOM)",
+      labelEn: "Material BOM Schedule",
+      icon: Layers,
+      badge: isFa ? "دیتابیس لیفت‌دیزاینر" : "DigiPara Database"
     },
     {
       id: "calculations" as WorkspaceTab,
@@ -161,17 +169,24 @@ export function LiftDesignerUnifiedWorkspace({ locale }: LiftDesignerUnifiedWork
           ACTIVE WORKSPACE TAB CONTENT (Focused, Clean & Uncluttered)
       ============================================================== */}
       <div className="transition-all duration-300">
-        {/* TAB 1: 2D CAD STUDIO */}
-        {activeTab === "dwg" && (
+        {/* TAB 0: PROJECT MATERIAL ESTIMATOR & IRANIAN RFQ */}
+        {activeTab === "estimator" && (
           <div className="space-y-4">
-            <LiftDesignerCADStudio locale={currentLocale} />
+            <ProjectMaterialEstimator locale={currentLocale} />
           </div>
         )}
 
-        {/* TAB 2: 3D BIM & KINEMATICS */}
+        {/* TAB 1: 3D BIM & CABIN DESIGN */}
         {activeTab === "3d" && (
           <div className="space-y-4">
             <ThreeCADShaftViewer locale={currentLocale} />
+          </div>
+        )}
+
+        {/* TAB 2: 2D CAD STUDIO */}
+        {activeTab === "dwg" && (
+          <div className="space-y-4">
+            <LiftDesignerCADStudio locale={currentLocale} />
           </div>
         )}
 
