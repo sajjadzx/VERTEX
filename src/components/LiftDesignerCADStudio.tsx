@@ -1287,16 +1287,43 @@ EOF`;
 
                 {/* Counterweight in Section View */}
                 {showCwt && (
-                  <g transform="translate(510, 350)">
+                  <g transform={`translate(${cwtPosition === "left" ? 245 : 510}, 350)`}>
                     <rect x="0" y="0" width="40" height="140" fill={isDark ? "#1e293b" : "#cbd5e1"} stroke={themeStyles.railCwt} strokeWidth="2" rx="2" />
                     {Array.from({ length: 5 }).map((_, i) => (
                       <line key={i} x1="0" y1={25 * (i + 1)} x2="40" y2={25 * (i + 1)} stroke={themeStyles.railCwt} strokeWidth="1" strokeDasharray="2,2" />
                     ))}
                     <text x="20" y="75" fontSize="9" fill={themeStyles.railCwt} textAnchor="middle" transform="rotate(90, 20, 75)" fontWeight="bold">
-                      CWT
+                      CWT ({cwtPosition.toUpperCase()})
                     </text>
                   </g>
                 )}
+
+                {/* Flexible Traveling Cable with catenary curve */}
+                <path d="M 320 406 C 320 535, 235 535, 222 360" fill="none" stroke="#0f172a" strokeWidth="3.5" />
+                <text x="270" y="525" fontSize="8" fill="#64748b" fontWeight="bold">TRAVELING CABLE 24-CORE</text>
+
+                {/* Architectural Floor Levels on Left Wall */}
+                <g stroke="#94a3b8" strokeWidth="1" fill="#64748b">
+                  {/* Floor 3 (Top Landing) */}
+                  <line x1="170" y1="240" x2="220" y2="240" stroke="#0284c7" strokeWidth="2" />
+                  <text x="160" y="244" fontSize="9" textAnchor="end" fill="#0284c7" fontWeight="bold">TOP LANDING (+9.60m)</text>
+
+                  {/* Floor 2 */}
+                  <line x1="180" y1="340" x2="220" y2="340" />
+                  <text x="175" y="344" fontSize="8" textAnchor="end">FLOOR 2 (+6.40m)</text>
+
+                  {/* Floor 1 */}
+                  <line x1="180" y1="440" x2="220" y2="440" />
+                  <text x="175" y="444" fontSize="8" textAnchor="end">FLOOR 1 (+3.20m)</text>
+
+                  {/* Floor 0 (Ground Entry) */}
+                  <line x1="160" y1="500" x2="220" y2="500" stroke="#10b981" strokeWidth="2" />
+                  <text x="155" y="504" fontSize="9" textAnchor="end" fill="#10b981" fontWeight="bold">GROUND L0 (±0.00m)</text>
+
+                  {/* Pit Level */}
+                  <line x1="160" y1="610" x2="220" y2="610" stroke="#d97706" strokeWidth="2" />
+                  <text x="155" y="605" fontSize="9" textAnchor="end" fill="#d97706" fontWeight="bold">PIT (-{minPitDepth}mm)</text>
+                </g>
 
                 {/* Pit & Hydraulic Oil Buffers (ALGI / ACLA / Henning) */}
                 <g transform="translate(425, 560)">
@@ -1353,6 +1380,25 @@ EOF`;
                     </text>
                   </g>
                 )}
+
+                {/* AutoCAD / DigiPara Elevation Title Block */}
+                <g transform="translate(585, 540)">
+                  <rect x="0" y="0" width="240" height="95" fill={isDark ? "#0f172a" : "#ffffff"} stroke={themeStyles.wallStroke} strokeWidth="1.5" />
+                  <rect x="0" y="0" width="240" height="20" fill={isDark ? "#1e293b" : "#f1f5f9"} stroke={themeStyles.wallStroke} strokeWidth="1" />
+                  <text x="10" y="14" fontSize="10" fill={themeStyles.highlight} fontWeight="bold">HOISTWAY ELEVATION DWG</text>
+                  <text x="230" y="14" fontSize="8" fill={themeStyles.text} textAnchor="end">REV 4.0</text>
+                  <line x1="0" y1="40" x2="240" y2="40" stroke={themeStyles.grid} strokeWidth="1" />
+                  <line x1="0" y1="60" x2="240" y2="60" stroke={themeStyles.grid} strokeWidth="1" />
+                  <line x1="0" y1="78" x2="240" y2="78" stroke={themeStyles.grid} strokeWidth="1" />
+                  <text x="10" y="34" fontSize="9" fill={themeStyles.text}>طرح و برنامه‌نویس:</text>
+                  <text x="105" y="34" fontSize="9" fill={themeStyles.highlight} fontWeight="bold">سید سجاد طباطبایی</text>
+                  <text x="10" y="54" fontSize="9" fill={themeStyles.text}>شماره تماس:</text>
+                  <text x="105" y="54" fontSize="9" fill="#0284c7" fontWeight="bold">09013356283</text>
+                  <text x="10" y="72" fontSize="9" fill={themeStyles.text}>کد ایمنی:</text>
+                  <text x="105" y="72" fontSize="9" fill="#10b981" fontWeight="bold">ISIRI 6303-1 / EN 81-20</text>
+                  <text x="10" y="90" fontSize="8" fill={themeStyles.text}>مقیاس:</text>
+                  <text x="105" y="90" fontSize="8" fill={themeStyles.text}>1:50 Elevation Section</text>
+                </g>
               </svg>
             </div>
 
