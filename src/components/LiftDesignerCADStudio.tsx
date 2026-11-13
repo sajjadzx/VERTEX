@@ -66,7 +66,7 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const [op, setOp] = useState<number>(1000); // Clear Opening mm (700 to 1600)
   const [doorType, setDoorType] = useState<"2P-TEL" | "2P-CEN" | "3P-TEL" | "4P-CEN" | "HINGED">("2P-TEL");
   const [sheaveDia, setSheaveDia] = useState<number>(400); // mm (320, 400, 480, 520)
-  const [suspension, setSuspension] = useState<"1:1" | "2:1">("2:1");
+  const [suspension, setSuspension] = useState<"1:1" | "2:1" | "4:1" | "cantilever" | "hydraulic">("2:1");
   const [railType, setRailType] = useState<"T70" | "T75" | "T82" | "T89" | "T90" | "T125" | "T127" | "T140">("T125");
 
   // Selected DigiPara Brand Selections
@@ -720,6 +720,29 @@ EOF`;
                 {sheaveDia === 400 ? "Ziehl-Abegg SM200" : "D/d ≥ 40 Standard"}
               </span>
             </div>
+
+            {/* Suspension / Roping System Selector */}
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+              <span className="text-[11px] font-semibold text-slate-300 block">{isFa ? "سیستم تعلیق (Suspension):" : "Suspension System:"}</span>
+              <select
+                value={suspension}
+                onChange={(e) => setSuspension(e.target.value as any)}
+                className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-1.5 text-xs font-mono outline-none focus:border-sky-500"
+              >
+                <option value="1:1">{isFa ? "۱:۱ مستقیم (Direct Traction)" : "1:1 Direct Acting"}</option>
+                <option value="2:1">{isFa ? "۲:۱ زیر/روی کابین (MRL Standard)" : "2:1 Underslung / Overslung"}</option>
+                <option value="4:1">{isFa ? "۴:۱ باربری سنگین (Heavy Freight)" : "4:1 Heavy Freight"}</option>
+                <option value="cantilever">{isFa ? "۲:۱ کوله‌ای / کنسولی (Cantilever)" : "2:1 Cantilever Rucksack"}</option>
+                <option value="hydraulic">{isFa ? "۲:۱ هیدرولیک جک بغل (Hydraulic)" : "2:1 Hydraulic Ram"}</option>
+              </select>
+              <span className="text-[10px] text-sky-400 block truncate">
+                {suspension === "1:1" ? "V_rope = V_car (100% Torque)" :
+                 suspension === "2:1" ? "V_rope = 2x V_car (50% Torque)" :
+                 suspension === "4:1" ? "V_rope = 4x V_car (25% Torque)" :
+                 suspension === "cantilever" ? "Single-side Mast L-Sling" :
+                 "Hydraulic Cylinder + Pulley"}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -1082,11 +1105,81 @@ EOF`;
                   <line x1="18" y1="0" x2="18" y2="490" stroke="#eab308" strokeWidth="1" strokeDasharray="3,3" />
                 </g>
 
-                {/* Suspension Steel Wire Ropes */}
-                <g stroke="#cbd5e1" strokeWidth="2">
-                  <line x1="365" y1="45" x2="365" y2="240" />
-                  <line x1="530" y1="65" x2="530" y2="350" />
-                </g>
+                {/* Suspension Steel Wire Ropes & Sheaves (Dynamic based on suspension type) */}
+                {suspension === "1:1" && (
+                  <g stroke="#38bdf8" strokeWidth="2.5">
+                    <line x1="365" y1="45" x2="365" y2="240" />
+                    <line x1="530" y1="65" x2="530" y2="350" />
+                    {/* Hitch terminations */}
+                    <rect x="357" y="235" width="16" height="8" fill="#eab308" />
+                    <rect x="522" y="345" width="16" height="8" fill="#eab308" />
+                    <text x="365" y="140" fontSize="8" fill="#38bdf8" textAnchor="end" fontWeight="bold">1:1 DIRECT</text>
+                  </g>
+                )}
+
+                {suspension === "2:1" && (
+                  <g stroke="#38bdf8" strokeWidth="2.5">
+                    {/* Fall 1: Dead End Hitch Top Left -> Underslung Sheave 1 */}
+                    <line x1="310" y1="50" x2="310" y2="422" />
+                    {/* Fall 2: Under Car Platform */}
+                    <line x1="310" y1="422" x2="430" y2="422" />
+                    {/* Fall 3: Underslung Sheave 2 -> Up to Machine Sheave */}
+                    <line x1="430" y1="422" x2="365" y2="45" />
+                    {/* Fall 4: Machine Sheave -> CWT Sheave */}
+                    <line x1="520" y1="65" x2="520" y2="330" />
+                    {/* Fall 5: CWT Sheave -> Dead End Hitch Top Right */}
+                    <line x1="540" y1="330" x2="540" y2="50" />
+
+                    {/* Sheaves on Car (Under platform) */}
+                    <circle cx="310" cy="418" r="12" fill="#0284c7" stroke="#38bdf8" strokeWidth="2" />
+                    <circle cx="430" cy="418" r="12" fill="#0284c7" stroke="#38bdf8" strokeWidth="2" />
+                    {/* Sheave on CWT */}
+                    <circle cx="530" cy="335" r="14" fill="#0284c7" stroke="#38bdf8" strokeWidth="2" />
+
+                    {/* Top Hitches */}
+                    <rect x="302" y="45" width="16" height="6" fill="#eab308" />
+                    <rect x="532" y="45" width="16" height="6" fill="#eab308" />
+                    <text x="370" y="300" fontSize="8" fill="#38bdf8" textAnchor="middle" fontWeight="bold">2:1 UNDERSLUNG</text>
+                  </g>
+                )}
+
+                {suspension === "4:1" && (
+                  <g stroke="#ef4444" strokeWidth="2">
+                    <line x1="300" y1="50" x2="300" y2="235" />
+                    <line x1="320" y1="50" x2="320" y2="235" />
+                    <line x1="420" y1="50" x2="420" y2="235" />
+                    <line x1="440" y1="235" x2="365" y2="45" />
+                    <line x1="515" y1="65" x2="515" y2="330" />
+                    <line x1="545" y1="330" x2="545" y2="50" />
+                    <circle cx="310" cy="225" r="12" fill="#dc2626" />
+                    <circle cx="430" cy="225" r="12" fill="#dc2626" />
+                    <circle cx="530" cy="335" r="14" fill="#dc2626" />
+                    <text x="370" y="140" fontSize="8" fill="#ef4444" textAnchor="middle" fontWeight="bold">4:1 HEAVY FREIGHT</text>
+                  </g>
+                )}
+
+                {suspension === "cantilever" && (
+                  <g stroke="#a855f7" strokeWidth="2.5">
+                    <line x1="275" y1="50" x2="275" y2="350" />
+                    <line x1="275" y1="350" x2="365" y2="45" />
+                    <line x1="530" y1="65" x2="530" y2="350" />
+                    <circle cx="275" cy="350" r="12" fill="#7c3aed" />
+                    <text x="275" y="200" fontSize="8" fill="#a855f7" textAnchor="end" fontWeight="bold">CANTILEVER 2:1</text>
+                  </g>
+                )}
+
+                {suspension === "hydraulic" && (
+                  <g stroke="#06b6d4" strokeWidth="2.5">
+                    {/* Hydraulic ram in pit */}
+                    <rect x="250" y="320" width="22" height="180" fill="#1e293b" stroke="#06b6d4" strokeWidth="1.5" />
+                    <rect x="256" y="200" width="10" height="120" fill="#e2e8f0" />
+                    <circle cx="261" cy="195" r="16" fill="#0891b2" stroke="#06b6d4" strokeWidth="2" />
+                    {/* Ropes from pit anchor over ram sheave to car bottom */}
+                    <line x1="245" y1="490" x2="245" y2="195" />
+                    <line x1="277" y1="195" x2="285" y2="400" />
+                    <text x="261" y="165" fontSize="8" fill="#06b6d4" textAnchor="middle" fontWeight="bold">HYDRAULIC 2:1 RAM</text>
+                  </g>
+                )}
 
                 {/* Car Sling & Cabin in Shaft Elevation */}
                 <g transform="translate(290, 240)">
