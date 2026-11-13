@@ -21,7 +21,13 @@ import {
   Wrench,
   Settings,
   Sparkles,
-  Info
+  Info,
+  Database,
+  Building,
+  CheckCircle2,
+  ExternalLink,
+  ChevronRight,
+  Palette
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,10 +38,10 @@ interface LiftDesignerCADStudioProps {
 export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const isFa = locale === "fa";
 
-  // Navigation & Mode States
-  const [activeTab, setActiveTab] = useState<"plan" | "section" | "components">("plan");
-  const [activeComponent, setActiveComponent] = useState<"ziehl_motor" | "wittur_motor" | "governor" | "door_cam" | "shoe" | "parachute" | "rails" | "buffer">("ziehl_motor");
-  const [cadTheme, setCadTheme] = useState<"autocad" | "ziehl" | "digipara">("autocad");
+  // Navigation Tabs: 4 comprehensive views
+  const [activeTab, setActiveTab] = useState<"plan" | "section" | "components" | "digipara_catalog">("plan");
+  const [activeComponent, setActiveComponent] = useState<"ziehl_motor" | "sassi_motor" | "wittur_motor" | "door_fermator" | "door_cam" | "shoe" | "parachute" | "rails" | "buffer">("ziehl_motor");
+  const [cadTheme, setCadTheme] = useState<"autocad" | "ziehl" | "digipara">("digipara");
   const [isCustomDimensions, setIsCustomDimensions] = useState<boolean>(true);
   const [copiedDxf, setCopiedDxf] = useState<boolean>(false);
   const [downloadedDxf, setDownloadedDxf] = useState<boolean>(false);
@@ -45,6 +51,9 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const [showBeams, setShowBeams] = useState<boolean>(true);
   const [showRefuge, setShowRefuge] = useState<boolean>(true);
   const [showCwt, setShowCwt] = useState<boolean>(true);
+
+  // DigiPara Catalog Category Tab
+  const [catalogCategory, setCatalogCategory] = useState<"machines" | "doors" | "rails" | "safety" | "buffers" | "materials">("machines");
 
   // Dynamic Sizing & Parametric Variables (in mm, kg, m/s)
   const [capacity, setCapacity] = useState<number>(1000); // 450, 630, 800, 1000, 1275, 1600, 2000
@@ -56,9 +65,16 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const [ch, setCh] = useState<number>(2300); // Car Height mm (2100 to 2800)
   const [op, setOp] = useState<number>(1000); // Clear Opening mm (700 to 1600)
   const [doorType, setDoorType] = useState<"2P-TEL" | "2P-CEN" | "3P-TEL" | "4P-CEN" | "HINGED">("2P-TEL");
-  const [sheaveDia, setSheaveDia] = useState<number>(400); // mm (320, 400, 480, 520) - 400 matches Ziehl-Abegg SM200.40C
+  const [sheaveDia, setSheaveDia] = useState<number>(400); // mm (320, 400, 480, 520)
   const [suspension, setSuspension] = useState<"1:1" | "2:1">("2:1");
-  const [railType, setRailType] = useState<"T70" | "T89" | "T125" | "T127">("T125");
+  const [railType, setRailType] = useState<"T70" | "T75" | "T82" | "T89" | "T90" | "T125" | "T127" | "T140">("T125");
+
+  // Selected DigiPara Brand Selections
+  const [selectedMachineBrand, setSelectedMachineBrand] = useState<string>("Ziehl-Abegg ZAtop SM200.40C");
+  const [selectedDoorBrand, setSelectedDoorBrand] = useState<string>("Fermator 40/10 Premium VVVF");
+  const [selectedRailBrand, setSelectedRailBrand] = useState<string>("Monteferro ISO 7465 Machined");
+  const [cabinWallFinish, setCabinWallFinish] = useState<"stainless_hairline" | "mirror_gold" | "carrara_marble" | "walnut_wood" | "glass_ral3003">("stainless_hairline");
+  const [cabinFloorFinish, setCabinFloorFinish] = useState<"granite_black" | "carrara_marble" | "damascus_red" | "bulb_plate">("carrara_marble");
 
   // Presets lookup table
   const standardPresets = {
@@ -68,7 +84,7 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
     1000: { sw: 2100, sd: 2100, cw: 1400, cd: 1600, op: 1000, ch: 2300, rails: "T125" as const, sheave: 400 },
     1275: { sw: 2300, sd: 2300, cw: 1600, cd: 1800, op: 1100, ch: 2400, rails: "T125" as const, sheave: 480 },
     1600: { sw: 2500, sd: 2700, cw: 1400, cd: 2400, op: 1300, ch: 2400, rails: "T127" as const, sheave: 480 },
-    2000: { sw: 2800, sd: 3000, cw: 1800, cd: 2500, op: 1500, ch: 2500, rails: "T127" as const, sheave: 520 },
+    2000: { sw: 2800, sd: 3000, cw: 1800, cd: 2500, op: 1500, ch: 2500, rails: "T140" as const, sheave: 520 },
   };
 
   const applyPreset = (cap: keyof typeof standardPresets) => {
@@ -85,18 +101,12 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   };
 
   // ISIRI 6303-1 / EN 81-20 Calculations
-  // Buffer stroke Sb = 0.0674 * v^2 (m) -> mm
   const bufferStroke = Math.round(0.0674 * speed * speed * 1000);
-  // Pit minimum depth: 1400 mm + buffer stroke
   const minPitDepth = 1400 + bufferStroke;
-  // Headroom minimum height: Car height + 1000 mm + 0.035 * v^2
   const minHeadroom = ch + 1000 + Math.round(0.035 * speed * speed * 1000);
-  // Car Area in m2
   const carArea = ((cw * cd) / 1000000).toFixed(2);
-  // Persons per ISIRI 6303 Table 1.1
   const persons = Math.floor(capacity / 75);
 
-  // Minimum Hoistway Width based on selected door type (مبحث ۱۵)
   const minShaftWidthForDoor = Math.round(
     doorType === "2P-TEL" ? 1.5 * op + 250 :
     doorType === "2P-CEN" ? 2.0 * op + 200 :
@@ -105,17 +115,16 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
     op + 220
   );
 
-  // Distance between guide rails (DBG) mm
   const dbg = cw + 140;
 
-  // CAD Theme Colors
+  // CAD Theme Colors (Incorporating DigiPara 2020 and AutoCAD standards from LD50.MDF)
   const themeStyles = {
     autocad: {
       bg: "#09111b",
       grid: "rgba(2,132,199,0.12)",
       gridSub: "rgba(255,255,255,0.03)",
       wallStroke: "#38bdf8",
-      wallFill: "rgba(15,23,42,0.75)",
+      wallFill: "rgba(15,23,42,0.85)",
       beam: "#f59e0b",
       railCar: "#00f0ff",
       railCwt: "#10b981",
@@ -147,26 +156,33 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
       grid: "rgba(15,23,42,0.08)",
       gridSub: "rgba(0,0,0,0.02)",
       wallStroke: "#0f172a",
-      wallFill: "rgba(241,245,249,0.9)",
+      wallFill: "rgba(241,245,249,0.92)",
       beam: "#475569",
-      railCar: "#1e293b",
-      railCwt: "#047857",
-      sling: "#334155",
-      dim: "#dc2626", // Engineering Red Dimensions
-      text: "#334155",
+      railCar: "#0284c7",
+      railCwt: "#059669",
+      sling: "#1e293b",
+      dim: "#dc2626", // DigiPara Engineering Red Dimensions
+      text: "#1e293b",
       highlight: "#0284c7",
-      motorBg: "#f1f5f9",
+      motorBg: "#f8fafc",
       motorStroke: "#0f172a",
     }
   }[cadTheme];
 
   const isDark = cadTheme !== "digipara";
 
+  // Cabin Material Render Fill based on DigiPara Material selection
+  const cabinFillColor = {
+    stainless_hairline: isDark ? "rgba(71,85,105,0.85)" : "#e2e8f0",
+    mirror_gold: isDark ? "rgba(202,138,4,0.3)" : "#fef08a",
+    carrara_marble: isDark ? "rgba(248,250,252,0.85)" : "#f8fafc",
+    walnut_wood: isDark ? "rgba(120,53,15,0.5)" : "#d97706",
+    glass_ral3003: isDark ? "rgba(185,28,28,0.4)" : "#fca5a5",
+  }[cabinWallFinish];
+
   // SVG Plan Coordinate Scaling Logic
-  // Map parametric dimensions (SW 1400-3200, SD 1400-3400) to SVG ViewBox (800 x 640)
   const svgCenterX = 400;
   const svgCenterY = 320;
-  // Scaling factor: 520px / 2800mm approx 0.185 px per mm
   const scale = 0.18;
 
   const shaftWpx = Math.max(260, Math.min(580, sw * scale));
@@ -177,19 +193,15 @@ export function LiftDesignerCADStudio({ locale }: LiftDesignerCADStudioProps) {
   const carWpx = Math.max(160, Math.min(shaftWpx - 40, cw * scale));
   const carDpx = Math.max(160, Math.min(shaftDpx - 60, cd * scale));
   const carLeft = svgCenterX - carWpx / 2;
-  // Offset car toward front (bottom) leaving space for counterweight at top (rear)
   const carTop = shaftTop + 70 + (shaftDpx - 70 - carDpx) * 0.45;
 
   const opWpx = Math.max(120, Math.min(carWpx - 20, op * scale));
-  const doorLeft = svgCenterX - opWpx / 2;
-
-  // Counterweight dimensions
   const cwtWpx = carWpx * 0.75;
   const cwtDpx = 22;
   const cwtLeft = svgCenterX - cwtWpx / 2;
   const cwtTop = shaftTop + 20;
 
-  // Generate Real Dynamic DXF ASCII String
+  // Generate Official DigiPara-compliant DXF ASCII String
   const generateDxfString = () => {
     return `0
 SECTION
@@ -224,7 +236,7 @@ LAYER
 0
 LAYER
 2
-SHAFT_OUTLINE
+LD_SHAFT_WALLS
 70
 0
 62
@@ -232,7 +244,7 @@ SHAFT_OUTLINE
 0
 LAYER
 2
-CAR_SLING
+LD_CAR_OBJECTS
 70
 0
 62
@@ -240,7 +252,7 @@ CAR_SLING
 0
 LAYER
 2
-CWT_FRAME
+LD_CWT_OBJECTS
 70
 0
 62
@@ -248,7 +260,7 @@ CWT_FRAME
 0
 LAYER
 2
-RAILS_ISO7465
+LD_GUIDE_RAILS
 70
 0
 62
@@ -256,7 +268,7 @@ RAILS_ISO7465
 0
 LAYER
 2
-DOOR_OPENING
+LD_DOOR_OBJECTS
 70
 0
 62
@@ -264,7 +276,7 @@ DOOR_OPENING
 0
 LAYER
 2
-DIMENSIONS
+LD_DIMENSIONS
 70
 0
 62
@@ -280,7 +292,7 @@ ENTITIES
 0
 LWPOLYLINE
 8
-SHAFT_OUTLINE
+LD_SHAFT_WALLS
 90
 4
 70
@@ -304,7 +316,7 @@ ${sd}.0
 0
 LWPOLYLINE
 8
-CAR_SLING
+LD_CAR_OBJECTS
 90
 4
 70
@@ -328,7 +340,7 @@ ${(sd + cd) / 2 + 100}.0
 0
 LINE
 8
-DOOR_OPENING
+LD_DOOR_OBJECTS
 10
 ${(sw - op) / 2}.0
 20
@@ -355,7 +367,7 @@ EOF`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `VERTEX_LIFTDESIGNER_${sw}x${sd}_${capacity}KG.dxf`;
+    a.download = `VERTEX_DIGIPARA_${sw}x${sd}_${capacity}KG.dxf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -380,13 +392,13 @@ EOF`;
                 VERTEX LIFTDESIGNER™ & AUTOCAD PARAMETRIC STUDIO
               </h3>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
-                ISIRI 6303-1 / ISO 7465 / STEP-AP214
+                DIGIPARA 2020 DATABASE INTEGRATED
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {isFa 
-                ? "مهندسی دقیق و ابعادی چاه با قابلیت تغییر سایز زنده و استایل‌های صنعتی برگرفته از فایل‌های STEP" 
-                : "Real-time parametric sizing, ISO 7465 T-rails, and authentic CAD models from STEP archives"}
+                ? "یکپارچه‌سازی کتابخانه جامع قطعات، سازندگان و استایل‌های دیجی‌پارا لیفت‌دیزاینر ۲۰۲۰ با موتور محاسباتی ورتکس" 
+                : "Full integration of DigiPara LiftDesigner 2020 component databases, manufacturer catalogs & AutoCAD layers"}
             </p>
           </div>
         </div>
@@ -395,6 +407,15 @@ EOF`;
         <div className="flex flex-wrap items-center gap-2">
           {/* Theme Mode Switcher */}
           <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono">
+            <button
+              onClick={() => setCadTheme("digipara")}
+              className={cn(
+                "px-2.5 py-1 rounded-lg font-bold transition-all",
+                cadTheme === "digipara" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-white"
+              )}
+            >
+              DigiPara Print
+            </button>
             <button
               onClick={() => setCadTheme("autocad")}
               className={cn(
@@ -413,22 +434,13 @@ EOF`;
             >
               Ziehl Titanium
             </button>
-            <button
-              onClick={() => setCadTheme("digipara")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg font-bold transition-all",
-                cadTheme === "digipara" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-white"
-              )}
-            >
-              DigiPara Print
-            </button>
           </div>
 
           {/* DXF Export & Download Buttons */}
           <button
             onClick={handleDownloadDxf}
             className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-mono font-bold hover:bg-emerald-500 transition-all flex items-center gap-1.5 shadow-sm"
-            title="Download AutoCAD DXF ASCII File"
+            title="Download AutoCAD DXF with DigiPara Layers"
           >
             {downloadedDxf ? <Check className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
             <span>{downloadedDxf ? (isFa ? "دانلود شد" : "Downloaded") : (isFa ? "دانلود فایل DXF" : "Download DXF")}</span>
@@ -446,45 +458,61 @@ EOF`;
       </div>
 
       {/* ==============================================================
-          STUDIO TABS NAVIGATION
+          STUDIO TABS NAVIGATION (4 MAIN MODULES)
       ============================================================== */}
       <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-mono overflow-x-auto">
         <div className="flex items-center gap-2 min-w-max">
           <button
             onClick={() => setActiveTab("plan")}
             className={cn(
-              "px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
+              "px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
               activeTab === "plan"
                 ? "bg-sky-500/20 text-sky-300 border border-sky-400/40"
                 : "text-slate-400 hover:text-white hover:bg-slate-800"
             )}
           >
             <Layers className="w-4 h-4 text-sky-400" />
-            <span>{isFa ? "۱. پلان آهن‌کشی و سازه چاه (Plan DWG)" : "1. Hoistway & Rail Plan DWG"}</span>
+            <span>{isFa ? "۱. پلان آهن‌کشی و چاه (Plan DWG)" : "1. Hoistway & Rail Plan"}</span>
           </button>
+
           <button
             onClick={() => setActiveTab("section")}
             className={cn(
-              "px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
+              "px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
               activeTab === "section"
                 ? "bg-sky-500/20 text-sky-300 border border-sky-400/40"
                 : "text-slate-400 hover:text-white hover:bg-slate-800"
             )}
           >
             <Ruler className="w-4 h-4 text-sky-400" />
-            <span>{isFa ? "۲. برش مقطع طولی چاه و موتورخانه (Section DWG)" : "2. Hoistway Elevation Section"}</span>
+            <span>{isFa ? "۲. مقطع طولی چاه و موتورخانه (Section DWG)" : "2. Elevation Section"}</span>
           </button>
+
           <button
             onClick={() => setActiveTab("components")}
             className={cn(
-              "px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
+              "px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
               activeTab === "components"
                 ? "bg-sky-500/20 text-sky-300 border border-sky-400/40"
                 : "text-slate-400 hover:text-white hover:bg-slate-800"
             )}
           >
             <Wrench className="w-4 h-4 text-sky-400" />
-            <span>{isFa ? "۳. آناتومی قطعات بر اساس فایلهای STEP (CAD Parts)" : "3. STEP CAD Subsystems Anatomy"}</span>
+            <span>{isFa ? "۳. آناتومی قطعات بر اساس STEP (CAD Parts)" : "3. STEP CAD Subsystems"}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("digipara_catalog")}
+            className={cn(
+              "px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-2",
+              activeTab === "digipara_catalog"
+                ? "bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-sm"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
+            )}
+          >
+            <Database className="w-4 h-4 text-amber-400" />
+            <span>{isFa ? "۴. کتابخانه قطعات و سازندگان دیجی‌پارا (DigiPara Catalog)" : "4. DigiPara 2020 Catalog"}</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold">NEW</span>
           </button>
         </div>
 
@@ -500,7 +528,7 @@ EOF`;
             )}
           >
             <Sliders className="w-3.5 h-3.5 text-amber-400" />
-            <span>{isFa ? (isCustomDimensions ? "پنل تغییر ابعاد فعال" : "تغییر دستی سایز") : "Parametric Controls"}</span>
+            <span>{isFa ? (isCustomDimensions ? "پنل پارامتریک باز" : "تنظیم دستی ابعاد") : "Parametric Controls"}</span>
           </button>
         </div>
       </div>
@@ -509,11 +537,11 @@ EOF`;
           PARAMETRIC SIZING CONTROL PANEL (قابلیت تغییر سایز و اندازه زنده)
       ============================================================== */}
       {isCustomDimensions && (
-        <div className="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 text-xs font-mono space-y-4">
+        <div className="p-4 sm:p-5 bg-slate-900/95 border-b border-slate-800 text-xs font-mono space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/60 pb-3">
             <div className="flex items-center gap-2 text-white font-bold">
               <Sliders className="w-4 h-4 text-sky-400" />
-              <span>{isFa ? "تنظیمات تغییر سایز، ابعاد چاه و مشخصات مهندسی (Live Parametric Controls)" : "Live Parametric Sizing & Structural Dimensions"}</span>
+              <span>{isFa ? "تنظیمات تغییر سایز، ابعاد چاه و مشخصات مهندسی (Live Parametric Sizing)" : "Live Parametric Sizing & Structural Dimensions"}</span>
             </div>
 
             {/* Capacity Quick Presets */}
@@ -689,7 +717,7 @@ EOF`;
                 ))}
               </div>
               <span className="text-[10px] text-amber-400/90 block truncate">
-                {sheaveDia === 400 ? (isFa ? "مطابق Ziehl-Abegg SM200" : "Ziehl-Abegg SM200") : "D/d ≥ 40 Standard"}
+                {sheaveDia === 400 ? "Ziehl-Abegg SM200" : "D/d ≥ 40 Standard"}
               </span>
             </div>
           </div>
@@ -755,11 +783,14 @@ EOF`;
             </button>
           </div>
 
-          {/* Scale Indicator */}
-          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+          {/* Active Component & Scale Badge */}
+          <div className="flex items-center gap-3 text-[11px] text-slate-400">
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-slate-800 text-sky-300 font-mono">
+              {selectedMachineBrand.split(" ")[0]} / {selectedDoorBrand.split(" ")[0]}
+            </span>
             <span className="font-mono">SCALE 1:20</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-emerald-400 font-bold">LIVE PARAMETRIC</span>
+            <span className="text-emerald-400 font-bold">DIGIPARA LIVE</span>
           </div>
         </div>
 
@@ -797,13 +828,9 @@ EOF`;
                 {/* Steel Column Corners (آهن‌کشی نبشی ۴ گوشه L80x80) */}
                 {showBeams && (
                   <g fill={themeStyles.beam}>
-                    {/* Top-Left Corner Angle */}
                     <path d={`M ${shaftLeft} ${shaftTop} L ${shaftLeft + 18} ${shaftTop} L ${shaftLeft + 18} ${shaftTop + 6} L ${shaftLeft + 6} ${shaftTop + 6} L ${shaftLeft + 6} ${shaftTop + 18} L ${shaftLeft} ${shaftTop + 18} Z`} />
-                    {/* Top-Right Corner Angle */}
                     <path d={`M ${shaftLeft + shaftWpx} ${shaftTop} L ${shaftLeft + shaftWpx - 18} ${shaftTop} L ${shaftLeft + shaftWpx - 18} ${shaftTop + 6} L ${shaftLeft + shaftWpx - 6} ${shaftTop + 6} L ${shaftLeft + shaftWpx - 6} ${shaftTop + 18} L ${shaftLeft + shaftWpx} ${shaftTop + 18} Z`} />
-                    {/* Bottom-Left Corner Angle */}
                     <path d={`M ${shaftLeft} ${shaftTop + shaftDpx} L ${shaftLeft + 18} ${shaftTop + shaftDpx} L ${shaftLeft + 18} ${shaftTop + shaftDpx - 6} L ${shaftLeft + 6} ${shaftTop + shaftDpx - 6} L ${shaftLeft + 6} ${shaftTop + shaftDpx - 18} L ${shaftLeft} ${shaftTop + shaftDpx - 18} Z`} />
-                    {/* Bottom-Right Corner Angle */}
                     <path d={`M ${shaftLeft + shaftWpx} ${shaftTop + shaftDpx} L ${shaftLeft + shaftWpx - 18} ${shaftTop + shaftDpx} L ${shaftLeft + shaftWpx - 18} ${shaftTop + shaftDpx - 6} L ${shaftLeft + shaftWpx - 6} ${shaftTop + shaftDpx - 6} L ${shaftLeft + shaftWpx - 6} ${shaftTop + shaftDpx - 18} L ${shaftLeft + shaftWpx} ${shaftTop + shaftDpx - 18} Z`} />
                   </g>
                 )}
@@ -820,7 +847,6 @@ EOF`;
                 {showCwt && (
                   <g transform={`translate(${cwtLeft}, ${cwtTop})`}>
                     <rect x="0" y="0" width={cwtWpx} height={cwtDpx} fill={isDark ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.2)"} stroke={themeStyles.railCwt} strokeWidth="2" rx="2" />
-                    {/* CWT Cast Iron Filler Blocks */}
                     {Array.from({ length: 6 }).map((_, idx) => (
                       <line 
                         key={idx} 
@@ -829,16 +855,15 @@ EOF`;
                         stroke={themeStyles.railCwt} strokeWidth="1" strokeDasharray="2,2" 
                       />
                     ))}
-                    {/* CWT Guide Rails T70 at both ends */}
                     <rect x="-8" y="4" width="8" height="14" fill={themeStyles.railCwt} />
                     <rect x={cwtWpx} y="4" width="8" height="14" fill={themeStyles.railCwt} />
                     <text x={cwtWpx / 2} y="15" fontSize="9" fill={themeStyles.railCwt} textAnchor="middle" fontWeight="bold">
-                      CWT FRAME (50% BALANCE)
+                      CWT FRAME (T70 RAILS)
                     </text>
                   </g>
                 )}
 
-                {/* Car Guide Rails (ریل‌های راهنمای کابین T89 / T125 در دو طرف چپ و راست) */}
+                {/* Car Guide Rails (ریل‌های راهنمای کابین T89 / T125 / T140 در دو طرف چپ و راست) */}
                 {/* Left Rail */}
                 <g transform={`translate(${shaftLeft + 18}, ${svgCenterY})`}>
                   <path d="M 0 -22 L 7 -22 L 7 -5 L 26 -5 L 26 5 L 7 5 L 7 22 L 0 22 Z" fill={themeStyles.railCar} stroke={themeStyles.wallStroke} strokeWidth="1.5" />
@@ -857,7 +882,7 @@ EOF`;
                   <text x="-5" y="-26" fontSize="9" fill={themeStyles.railCar} textAnchor="middle">RAIL {railType}</text>
                 </g>
 
-                {/* Car Enclosure & Sling Platform (کابین و یوک فولادی) */}
+                {/* Car Enclosure & Sling Platform with Selected Material */}
                 <g>
                   {/* Outer Car Sling (یوک کابین) */}
                   <rect 
@@ -869,11 +894,11 @@ EOF`;
                     rx="4"
                   />
 
-                  {/* Inner Car Walls (دیواره‌های کابین) */}
+                  {/* Inner Car Walls (دیواره‌های کابین با متریال انتخابی دیجی‌پارا) */}
                   <rect 
                     x={carLeft} y={carTop} 
                     width={carWpx} height={carDpx} 
-                    fill={isDark ? "rgba(30,41,59,0.85)" : "rgba(255,255,255,0.95)"} 
+                    fill={cabinFillColor} 
                     stroke={themeStyles.wallStroke} 
                     strokeWidth="2" 
                   />
@@ -909,26 +934,26 @@ EOF`;
 
                   {/* Car Interior Specs Text */}
                   <text x={svgCenterX} y={carTop + carDpx - 30} fontSize="11" fill={themeStyles.highlight} textAnchor="middle" fontWeight="bold">
-                    CAR PLATFORM: {cw} × {cd} mm ({capacity} kg / {persons} P)
+                    CAR: {cw} × {cd} mm ({capacity} kg / {persons} P)
+                  </text>
+                  <text x={svgCenterX} y={carTop + carDpx - 14} fontSize="9" fill={themeStyles.text} textAnchor="middle">
+                    Finish: {cabinWallFinish.replace("_", " ").toUpperCase()}
                   </text>
                 </g>
 
                 {/* Landing & Car Doors (درب‌های طبقه و کابین بر مبنای عرض بازشو) */}
                 <g transform={`translate(${svgCenterX}, ${shaftTop + shaftDpx})`}>
-                  {/* Landing Door Outer Track */}
                   <rect x={-opWpx / 2} y="-6" width={opWpx} height="6" fill="#3b82f6" />
-                  {/* Car Door Inner Track */}
                   <rect x={-opWpx / 2} y="-16" width={opWpx} height="6" fill="#60a5fa" />
-                  {/* Door Panels Schematic */}
                   <line x1={-opWpx / 2} y1="-11" x2="0" y2="-11" stroke="#ffffff" strokeWidth="2" />
                   <line x1="0" y1="-11" x2={opWpx / 2} y2="-11" stroke="#ffffff" strokeWidth="2" />
                   
                   <text x="0" y="-22" fontSize="10" fill="#3b82f6" textAnchor="middle" fontWeight="bold">
-                    DOOR OP = {op} mm ({doorType})
+                    DOOR OP = {op} mm ({doorType}) - {selectedDoorBrand.split(" ")[0]}
                   </text>
                 </g>
 
-                {/* Parametric Dimension Lines (خطوط اندازه‌گذاری زنده استاندارد اتوکد) */}
+                {/* Parametric Dimension Lines (خطوط اندازه‌گذاری زنده استاندارد اتوکد و دیجی‌پارا) */}
                 {showDimensions && (
                   <g stroke={themeStyles.dim} strokeWidth="1.2" fill={themeStyles.dim}>
                     {/* Shaft Width SW Top */}
@@ -988,13 +1013,13 @@ EOF`;
               </div>
               <div className={cn("p-3 rounded-xl border", isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200")}>
                 <span className="text-slate-400 block text-[11px]">{isFa ? "پروفیل ریل راهنما (ISO 7465):" : "Guide Rails Profile:"}</span>
-                <span className="text-sm font-bold text-amber-400 mt-1 block">{railType}/B / T70-CWT</span>
+                <span className="text-sm font-bold text-amber-400 mt-1 block">{railType}/B ({selectedRailBrand.split(" ")[0]})</span>
                 <span className="text-[10px] text-slate-500 mt-0.5 block">DBG = {dbg} mm</span>
               </div>
               <div className={cn("p-3 rounded-xl border", isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200")}>
-                <span className="text-slate-400 block text-[11px]">{isFa ? "عرض بازشوی خالص درب (OP):" : "Clear Opening Width:"}</span>
-                <span className="text-sm font-bold text-purple-400 mt-1 block">{op} mm ({doorType})</span>
-                <span className="text-[10px] text-slate-500 mt-0.5 block">{isFa ? `حداقل عرض چاه: ${minShaftWidthForDoor}mm` : `Min SW: ${minShaftWidthForDoor}mm`}</span>
+                <span className="text-slate-400 block text-[11px]">{isFa ? "موتور محرکه فعال:" : "Active Machine:"}</span>
+                <span className="text-sm font-bold text-purple-400 mt-1 block truncate">{selectedMachineBrand.split(" ")[0]} Ø{sheaveDia}</span>
+                <span className="text-[10px] text-slate-500 mt-0.5 block">DigiPara Library</span>
               </div>
             </div>
           </div>
@@ -1019,23 +1044,21 @@ EOF`;
                 <line x1="160" y1="40" x2="690" y2="40" stroke="#64748b" strokeWidth="4" />
                 <line x1="160" y1="610" x2="690" y2="610" stroke="#64748b" strokeWidth="4" />
 
-                {/* Machine Room & Gearless PMSM Motor (Ziehl-Abegg SM200.40C / Wittur WSG) */}
+                {/* Machine Room & Gearless PMSM Motor (Ziehl-Abegg SM200 / Sassi / Wittur) */}
                 <g transform="translate(425, 80)">
-                  {/* Steel Bedplate with Anti-Vibration Isolation Pads */}
                   <rect x="-140" y="-8" width="280" height="16" fill={isDark ? "#1e293b" : "#cbd5e1"} stroke="#64748b" strokeWidth="1.5" />
                   <rect x="-120" y="8" width="25" height="10" fill="#10b981" />
                   <rect x="95" y="8" width="25" height="10" fill="#10b981" />
                   
                   {/* PMSM Gearless Motor Housing */}
                   <circle cx="-30" cy="-35" r="42" fill={themeStyles.motorBg} stroke={themeStyles.motorStroke} strokeWidth="2.5" />
-                  {/* Traction Sheave with Hardened V-Grooves (Scaled to Sheave Diameter) */}
                   <circle cx="-30" cy="-35" r={sheaveDia * 0.08} fill="none" stroke="#f97316" strokeWidth="2.5" strokeDasharray="4,2" />
                   
-                  {/* Dual Independent Electromagnetic Disc Brakes (MFB) */}
+                  {/* Dual Independent Electromagnetic Disc Brakes */}
                   <rect x="-48" y="-88" width="36" height="16" fill="#ef4444" rx="2" />
                   <text x="-30" y="-92" fontSize="9" fill="#ef4444" textAnchor="middle" fontWeight="bold">DUAL MFB BRAKE</text>
 
-                  {/* Manual Brake Release Lever (MHL) */}
+                  {/* Manual Brake Release Lever */}
                   <line x1="-30" y1="-80" x2="-10" y2="-105" stroke="#f59e0b" strokeWidth="2.5" />
                   <circle cx="-10" cy="-105" r="3" fill="#f59e0b" />
 
@@ -1043,18 +1066,18 @@ EOF`;
                   <circle cx="105" cy="-15" r="24" fill={themeStyles.motorBg} stroke="#f97316" strokeWidth="2" />
                   
                   <text x="-30" y="-32" fontSize="9" fill="#ffffff" textAnchor="middle" fontWeight="bold">
-                    ZIEHL SM200
+                    {selectedMachineBrand.split(" ")[0]}
                   </text>
                   <text x="105" y="-12" fontSize="8" fill={isDark ? "#ffffff" : "#0f172a"} textAnchor="middle">
                     DEFLECTOR Ø{sheaveDia}
                   </text>
                 </g>
 
-                {/* Overspeed Governor System at Overhead (گاورنر سرعت دوطرفه ۳۰۸mm) */}
+                {/* Overspeed Governor System at Overhead (Bode / Dynatech / Gervall) */}
                 <g transform="translate(260, 65)">
                   <circle cx="0" cy="0" r="18" fill="none" stroke="#eab308" strokeWidth="2" />
                   <circle cx="0" cy="0" r="4" fill="#eab308" />
-                  <text x="0" y="-24" fontSize="9" fill="#eab308" textAnchor="middle" fontWeight="bold">GOVERNOR 308mm</text>
+                  <text x="0" y="-24" fontSize="9" fill="#eab308" textAnchor="middle" fontWeight="bold">GOVERNOR 300mm</text>
                   <line x1="-18" y1="0" x2="-18" y2="490" stroke="#eab308" strokeWidth="1" strokeDasharray="3,3" />
                   <line x1="18" y1="0" x2="18" y2="490" stroke="#eab308" strokeWidth="1" strokeDasharray="3,3" />
                 </g>
@@ -1067,18 +1090,15 @@ EOF`;
 
                 {/* Car Sling & Cabin in Shaft Elevation */}
                 <g transform="translate(290, 240)">
-                  {/* Car Sling Upper Crosshead (تیرک افقی بالای یوک) */}
                   <rect x="-10" y="0" width="170" height="16" fill={themeStyles.sling} stroke="#64748b" strokeWidth="1.5" />
-                  {/* Car Sling Vertical Uprights */}
                   <rect x="-10" y="16" width="12" height="150" fill={themeStyles.sling} stroke="#64748b" strokeWidth="1.5" />
                   <rect x="148" y="16" width="12" height="150" fill={themeStyles.sling} stroke="#64748b" strokeWidth="1.5" />
-                  {/* Car Sling Lower Safety Plank */}
                   <rect x="-10" y="166" width="170" height="16" fill={themeStyles.sling} stroke="#64748b" strokeWidth="1.5" />
 
                   {/* Enclosed Cabin Box */}
-                  <rect x="5" y="16" width="140" height="150" fill={isDark ? "rgba(30,41,59,0.9)" : "rgba(255,255,255,0.95)"} stroke={themeStyles.wallStroke} strokeWidth="2" />
+                  <rect x="5" y="16" width="140" height="150" fill={cabinFillColor} stroke={themeStyles.wallStroke} strokeWidth="2" />
                   
-                  {/* Progressive Safety Gear Blocks at Bottom (پاراشوت تدریجی) */}
+                  {/* Progressive Safety Gear Blocks at Bottom (Dynatech / Cobianchi) */}
                   <rect x="-14" y="166" width="16" height="22" fill="#ef4444" rx="2" />
                   <rect x="148" y="166" width="16" height="22" fill="#ef4444" rx="2" />
                   <text x="75" y="196" fontSize="8" fill="#ef4444" textAnchor="middle" fontWeight="bold">
@@ -1114,9 +1134,8 @@ EOF`;
                   </g>
                 )}
 
-                {/* Pit & Hydraulic Oil Buffers (ضربه‌گیرهای هیدرولیک کف چاهک) */}
+                {/* Pit & Hydraulic Oil Buffers (ALGI / ACLA / Henning) */}
                 <g transform="translate(425, 560)">
-                  {/* Car Oil Buffer */}
                   <g transform="translate(-75, 0)">
                     <rect x="-12" y="0" width="24" height="50" fill="#f59e0b" rx="2" />
                     <rect x="-8" y="-15" width="16" height="15" fill="#94a3b8" />
@@ -1124,7 +1143,6 @@ EOF`;
                     <text x="0" y="32" fontSize="7" fill="#000000" textAnchor="middle" fontWeight="bold">BUFFER</text>
                   </g>
 
-                  {/* Counterweight Oil Buffer */}
                   <g transform="translate(105, 0)">
                     <rect x="-12" y="0" width="24" height="50" fill="#f59e0b" rx="2" />
                     <rect x="-8" y="-15" width="16" height="15" fill="#94a3b8" />
@@ -1139,10 +1157,9 @@ EOF`;
                   </g>
                 </g>
 
-                {/* Elevation Dimension Lines (ارتفاع بالاسری و عمق چاهک) */}
+                {/* Elevation Dimension Lines */}
                 {showDimensions && (
                   <g stroke={themeStyles.dim} strokeWidth="1.2" fill={themeStyles.dim}>
-                    {/* Headroom Dimension Top Right */}
                     <line x1="655" y1="40" x2="655" y2="240" />
                     <line x1="645" y1="40" x2="665" y2="40" />
                     <line x1="645" y1="240" x2="665" y2="240" />
@@ -1155,7 +1172,6 @@ EOF`;
                       HEADROOM (K) ≥ {minHeadroom} mm
                     </text>
 
-                    {/* Pit Depth Dimension Bottom Right */}
                     <line x1="655" y1="460" x2="655" y2="610" />
                     <line x1="645" y1="460" x2="665" y2="460" />
                     <line x1="645" y1="610" x2="665" y2="610" />
@@ -1168,7 +1184,6 @@ EOF`;
                       PIT DEPTH (S1) ≥ {minPitDepth} mm
                     </text>
 
-                    {/* Buffer Stroke Callout */}
                     <text x="350" y="545" fontSize="9" fill="#f59e0b" textAnchor="middle">
                       BUFFER STROKE Sb = {bufferStroke} mm (v = {speed} m/s)
                     </text>
@@ -1204,21 +1219,21 @@ EOF`;
         )}
 
         {/* ==============================================================
-            TAB 3: STEP ARCHIVE MECHANICAL SUBSYSTEMS (آناتومی تفکیکی قطعات CAD)
+            TAB 3: MECHANICAL SUBSYSTEMS (آناتومی تفکیکی قطعات CAD)
         ============================================================== */}
         {activeTab === "components" && (
           <div className="space-y-6">
-            {/* Component Selector Pills */}
             <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-700/40">
               {[
-                { id: "ziehl_motor", labelFa: "موتور Ziehl-Abegg ZAtop SM200", labelEn: "Ziehl-Abegg ZAtop SM200.40C" },
-                { id: "wittur_motor", labelFa: "موتور Wittur WSG-S2.3 (پارت جعبه‌تقسیم)", labelEn: "Wittur WSG-S2.3 Gearless" },
-                { id: "governor", labelFa: "گاورنر دوطرفه سرعت (Governor 308mm)", labelEn: "Bi-Directional Governor" },
+                { id: "ziehl_motor", labelFa: "موتور Ziehl-Abegg ZAtop SM200", labelEn: "Ziehl-Abegg SM200.40C" },
+                { id: "sassi_motor", labelFa: "موتور Alberto Sassi G-400 / Toro", labelEn: "Alberto Sassi G-400" },
+                { id: "wittur_motor", labelFa: "موتور Wittur WSG-S2.3 (MRL)", labelEn: "Wittur WSG-S2.3" },
+                { id: "door_fermator", labelFa: "درب اتوماتیک Fermator 40/10", labelEn: "Fermator 40/10 Door" },
                 { id: "door_cam", labelFa: "کمان بازکننده درب CL-04 (پمپ لولایی)", labelEn: "CL-04 Door Retiring Cam" },
                 { id: "shoe", labelFa: "کفشک چدنی صلب ریل (Guide Shoe)", labelEn: "Cast Iron Guide Shoe" },
                 { id: "parachute", labelFa: "ترمز ایمنی پاراشوت تدریجی", labelEn: "Progressive Safety Gear" },
-                { id: "rails", labelFa: "مقاطع ریل ISO 7465 (T89/T125)", labelEn: "ISO 7465 T-Rails" },
-                { id: "buffer", labelFa: "ضربه‌گیر هیدرولیک چاهک", labelEn: "Hydraulic Oil Buffer" },
+                { id: "rails", labelFa: "مقاطع ریل ISO 7465 (Monteferro)", labelEn: "ISO 7465 T-Rails" },
+                { id: "buffer", labelFa: "ضربه‌گیر هیدرولیک ALGI / ACLA", labelEn: "Hydraulic Oil Buffer" },
               ].map(comp => (
                 <button
                   key={comp.id}
@@ -1240,7 +1255,7 @@ EOF`;
               "p-6 rounded-2xl border",
               isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
             )}>
-              {/* Ziehl-Abegg SM200.40C */}
+              {/* Ziehl-Abegg */}
               {activeComponent === "ziehl_motor" && (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1249,7 +1264,7 @@ EOF`;
                         ZIEHL-ABEGG ZAtop SM200.40C (Permanent Magnet Synchronous Machine)
                       </h4>
                       <span className="text-xs text-slate-400 font-mono">
-                        {isFa ? "استخراج‌شده مستقیم از مدل سه‌بعدی ZIEHL-ABEGG_STEP_ZAtop_SM200.40C...stp (12.18 MB)" : "Direct extraction from official STEP CAD archive"}
+                        {isFa ? "موتور سنکرون مغناطیس دائم پرچمدار صنعت آسانسور از دیتابیس DigiPara LiftDesigner" : "Flagship PMSM Gearless Machine"}
                       </span>
                     </div>
                     <span className="text-xs font-mono text-emerald-400 font-bold px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30">
@@ -1258,8 +1273,8 @@ EOF`;
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "موتور سنکرون مغناطیس دائم بدون گیربکس پرچمدار صنعت آسانسور ساخت کمپانی زیلابگ آلمان. مجهز به فلکه کششی آلیاژی قطر ۴۰۰ میلی‌متر، ترمز دوبل الکترومغناطیسی MFB با سیستم نظارت میکروسوئیچی جهت الزامات ایمنی حرکت ناخواسته کابین (UCM)، اهرم مکانیکی بازکننده دستی ترمز (MHL) برای نجات اضطراری و درجه حفاظت صنعتی IP21." 
-                      : "Flagship German PMSM gearless machine with Ø400mm traction sheave, dual MFB redundant disc brakes, manual release lever (MHL), and EnDat absolute encoder."}
+                      ? "موتور سنکرون بدون گیربکس ساخت زیلابگ آلمان؛ مجهز به فلکه کششی آلیاژی قطر ۴۰۰ میلی‌متر، ترمز دوبل الکترومغناطیسی MFB با نظارت میکروسوئیچی جهت حفاظت در برابر حرکت ناخواسته کابین (UCM)، اهرم دستی رهاسازی ترمز (MHL) و حفاظت IP21." 
+                      : "Direct drive synchronous motor with 94% efficiency, Ø400mm traction sheave, dual redundant MFB brakes, and EnDat absolute encoder."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
@@ -1267,16 +1282,58 @@ EOF`;
                       <span className="text-amber-400 font-bold text-sm">Ø400 mm (V-Groove)</span>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                      <span className="text-slate-400 block text-[10px]">{isFa ? "ابعاد پاکت CAD:" : "BBox Dimensions:"}</span>
-                      <span className="text-sky-400 font-bold text-sm">1466 × 1072 × 1235 mm</span>
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "گشتاور نامی شفت:" : "Rated Torque:"}</span>
+                      <span className="text-sky-400 font-bold text-sm">650 Nm (14.7 kW)</span>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
                       <span className="text-slate-400 block text-[10px]">{isFa ? "ترمز ایمنی دوبل:" : "Safety Brake:"}</span>
                       <span className="text-emerald-400 font-bold text-sm">MFB Dual Circuit</span>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                      <span className="text-slate-400 block text-[10px]">{isFa ? "بیشینه ظرفیت نامی:" : "Max Rated Load:"}</span>
-                      <span className="text-purple-400 font-bold text-sm">Up to 1,600 kg</span>
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "بیشینه بار استاتیک:" : "Max Static Load:"}</span>
+                      <span className="text-purple-400 font-bold text-sm">40,000 N (40 kN)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sassi Motor */}
+              {activeComponent === "sassi_motor" && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-lg font-bold text-orange-400 font-mono">
+                        ALBERTO SASSI G-400 / TORO Series (Made in Italy)
+                      </h4>
+                      <span className="text-xs text-slate-400 font-mono">
+                        {isFa ? "۲۵۵ مدل موتور آلبرتو ساسی استخراج‌شده از کاتالوگ رسمی DigiPara LiftDesigner" : "Alberto Sassi Gearless & Geared Collection (255 Models)"}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-orange-400 font-bold px-2 py-1 rounded bg-orange-500/10 border border-orange-500/30">
+                      ITALIAN EXCELLENCE
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {isFa 
+                      ? "موتورهای گیرلس و گیربکس‌دار آلبرتو ساسی ایتالیا یکی از معتبرترین محرکه‌ها در پروژه‌های لوکس ایران. دارای فلکه چدن نشکن GGG-70، ترمز دوبل دیسکی پرقدرت و تحمل بارهای استاتیک سنگین تا ۴۵ کیلونیوتن." 
+                      : "Sassi G-Series gearless motors with high thermal endurance, ductile iron sheaves, and robust double disk brakes."}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
+                    <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "قطر فلکه کششی:" : "Sheave Diameter:"}</span>
+                      <span className="text-orange-400 font-bold text-sm">Ø400 / Ø480 mm</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "توان نامی الکتریکی:" : "Rated Power:"}</span>
+                      <span className="text-white font-bold text-sm">11.0 – 18.5 kW</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "سیستم روغن‌کاری:" : "Lubrication:"}</span>
+                      <span className="text-emerald-400 font-bold text-sm">Permanent Sealed Gearless</span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "ظرفیت نامی مسافر:" : "Passenger Capacity:"}</span>
+                      <span className="text-sky-400 font-bold text-sm">8 – 21 Persons (1600kg)</span>
                     </div>
                   </div>
                 </div>
@@ -1288,10 +1345,10 @@ EOF`;
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h4 className="text-lg font-bold text-sky-400 font-mono">
-                        WITTUR WSG-S2.3 Gearless PMSM Machine
+                        WITTUR WSG-S2.3 Gearless PMSM Machine (Germany)
                       </h4>
                       <span className="text-xs text-slate-400 font-mono">
-                        {isFa ? "استخراج‌شده از wittur WSG-S2.3.STEP (شامل پارت ایرانی jabe taqsim)" : "Compact MRL gearless machine with Persian terminal box labeling"}
+                        {isFa ? "موتور باریک MRL با پارت اختصاصی jabe taqsim در ساختار اسمبلی" : "Ultra-Compact MRL Synchronous Machine"}
                       </span>
                     </div>
                     <span className="text-xs font-mono text-emerald-400 font-bold px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30">
@@ -1300,8 +1357,8 @@ EOF`;
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "موتور بدون موتورخانه (MRL) ویتور آلمان با ابعاد پاکت ۴۱۵ در ۵۰۰ در ۱۱۳۹ میلی‌متر. این مدل دارای ترمز کالیپری دوطرفه، فلکه یکپارچه و ساختار بدنه آلومینیوم-چدن سبک‌سازی شده برای نصب مستقیم روی ریل راهنما در بالاسری چاه است." 
-                      : "Ultra-compact MRL synchronous machine with 415mm width envelope, integrated brake calipers, and direct guide-rail mounting capability."}
+                      ? "موتور آسانسورهای بدون موتورخانه (MRL) ویتور با عرض کامپکت ۴۱۵ میلی‌متر، ترمز کالیپری دوطرفه و قابلیت نصب مستقیم بر روی ریل راهنما در بالاسری چاه." 
+                      : "Ultra-compact MRL synchronous machine with 415mm width envelope and direct guide-rail mounting capability."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
@@ -1324,36 +1381,43 @@ EOF`;
                 </div>
               )}
 
-              {/* Governor Assembly */}
-              {activeComponent === "governor" && (
+              {/* Fermator Door */}
+              {activeComponent === "door_fermator" && (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="text-lg font-bold text-amber-400 font-mono">
-                      {isFa ? "گاورنر سرعت دوطرفه پاندولی (Governor assem.STEP - 7.92 MB)" : "Bi-Directional Overspeed Governor Assembly"}
-                    </h4>
-                    <span className="text-xs font-mono text-emerald-400 font-bold">بند ۹-۹ استاندارد ۶۳۰۳</span>
+                    <div>
+                      <h4 className="text-lg font-bold text-blue-400 font-mono">
+                        FERMATOR 40/10 & 50/11 Slim (Automatic Door Systems - Spain)
+                      </h4>
+                      <span className="text-xs text-slate-400 font-mono">
+                        {isFa ? "بیش از ۱۶۰ تیپ درب فرماتور از کاتالوگ دیجی‌پارا لیفت‌دیزاینر ۲۰۲۰" : "Fermator Automatic Door Series (160+ Models)"}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-blue-400 font-bold px-2 py-1 rounded bg-blue-500/10 border border-blue-500/30">
+                      GLOBAL LEADER
+                    </span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "سیستم گاورنر سرعت غیرمجاز مدل‌سازی شده در ابعاد ۳۰۸ در ۳۸۱ در ۳۸۵ میلی‌متر. مجهز به دو وزنه گریز از مرکز دوار متصل به فنر کالیبراسیون دقیق که در سرعت ۱.۱۵ برابر سرعت نامی، سوئیچ ایمنی الکتریکی را قطع کرده و فک مکانیکی نگه‌دارنده سیم‌بکسل را جهت تحریک پاراشوت قفل می‌کند." 
-                      : "Precision centrifugal governor with 308x381x385 mm bounding envelope, dual flyweights, calibration spring, test pulley, and safety circuit trip switch."}
+                      ? "سیستم‌های درب اتوماتیک کابین و طبقات فرماتور با کنترلر هوشمند VVVF4+، موتور محرکه براشلس، غلطک‌های آویز بلبرینگی با دوام فراتر از ۱ میلیون چرخه باز و بسته شدن و انطباق با استاندارد ضدحریق EN 81-58 کلاس E120." 
+                      : "Fermator automatic doors with VVVF4+ inverter, high durability hangers, fire certification EN 81-58 Class E120."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                      <span className="text-slate-400 block text-[10px]">{isFa ? "ابعاد دقیق پاکت:" : "CAD Envelope:"}</span>
-                      <span className="text-amber-400 font-bold text-sm">308 × 381 × 385 mm</span>
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "دامنه بازشوی مفید:" : "Clear Opening (OP):"}</span>
+                      <span className="text-blue-400 font-bold text-sm">700 – 1600 mm</span>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                      <span className="text-slate-400 block text-[10px]">{isFa ? "سرعت تحریک الکتریکی:" : "Trip Speed:"}</span>
-                      <span className="text-sky-400 font-bold text-sm">1.15 × v_rated</span>
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "کنترلر اپراتور:" : "Door Inverter:"}</span>
+                      <span className="text-white font-bold text-sm">Fermator VVVF4+</span>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                      <span className="text-slate-400 block text-[10px]">{isFa ? "قطر سیم‌بکسل گاورنر:" : "Rope Diameter:"}</span>
-                      <span className="text-white font-bold text-sm">Ø6.5 mm / Ø8 mm</span>
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "ضخامت سیل در مدل Slim:" : "Slim Sill Depth:"}</span>
+                      <span className="text-emerald-400 font-bold text-sm">Only 100 mm</span>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-                      <span className="text-slate-400 block text-[10px]">{isFa ? "وزنه کشش چاهک:" : "Tension Weight:"}</span>
-                      <span className="text-emerald-400 font-bold text-sm">25 kg Cast Iron</span>
+                      <span className="text-slate-400 block text-[10px]">{isFa ? "استاندارد ضدحریق:" : "Fire Rating:"}</span>
+                      <span className="text-amber-400 font-bold text-sm">EN 81-58 E120 / EW60</span>
                     </div>
                   </div>
                 </div>
@@ -1370,8 +1434,8 @@ EOF`;
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "پمپ قفل‌بازکن درب لولایی استخراج شده از مدل CL-04 با ابعاد دقیق ۶۰۰ در ۲۸۲ در ۷۴ میلی‌متر. این قطعه حیاتی در آسانسورهای نیمه‌اتوماتیک ایران الزامی است؛ در زمان حرکت کابین، مگنت کمان جمع است و به محض همسطح شدن با طبقه مقصد، بوبین با فرمان تابلو تحریک شده و لبه متحرک کمان قفل درب طبقه را باز می‌نماید." 
-                      : "Electro-mechanical retiring cam mechanism (600x282x74 mm) essential for Iranian semi-automatic hinged landing doors, ensuring door locks remain secure during travel."}
+                      ? "پمپ قفل‌بازکن درب لولایی با ابعاد ۶۰۰ در ۲۸۲ در ۷۴ میلی‌متر. این قطعه در آسانسورهای نیمه‌اتوماتیک ایران الزامی است؛ در زمان حرکت، کمان جمع بوده و در طبقه مقصد با ولتاژ ۱۱۰V DC بازوی متحرک قفل درب لولایی طبقه را آزاد می‌نماید." 
+                      : "Electro-mechanical retiring cam mechanism (600x282x74 mm) essential for Iranian semi-automatic hinged landing doors."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
@@ -1399,14 +1463,14 @@ EOF`;
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="text-lg font-bold text-sky-400 font-mono">
-                      {isFa ? "کفشک چدنی صلب ریل راهنما (Shoe used in ascensore.STEP)" : "Heavy-Duty Cast Iron Sliding Guide Shoe"}
+                      {isFa ? "کفشک چدنی صلب ریل راهنما (Cast Iron Sliding Guide Shoe)" : "Heavy-Duty Cast Iron Sliding Guide Shoe"}
                     </h4>
                     <span className="text-xs font-mono text-emerald-400 font-bold">ISO 7465 / ISIRI 6303</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "کفشک ریل لغزشی صلب استخراج شده از مدل با ابعاد ۱۶۶ در ۲۰۳ در ۲۹۹ میلی‌متر. ساخته شده از بدنه چدن داکتیل نشکن، لنت تعویض‌پذیر پلی‌اتیلن مهندسی با مقاومت سایش بالا، نمد روغندان خودکار و پیچ‌های فولادی سایز M16 برای رگلاژ دقیق فاصله شاقول ریل‌ها (DBG)." 
-                      : "Ductile cast iron sliding shoe (166x203x299 mm) with replaceable low-friction polyamide liner, automatic oil lubricator, and M16 precision backlash adjustment bolts."}
+                      ? "کفشک ریل لغزشی صلب استخراج شده از مدل با ابعاد ۱۶۶ در ۲۰۳ در ۲۹۹ میلی‌متر. ساخته شده از بدنه چدن داکتیل نشکن، لنت تعویض‌پذیر پلی‌اتیلن مهندسی با مقاومت سایش بالا و پیچ‌های فولادی سایز M16 برای رگلاژ دقیق فاصله شاقول ریل‌ها (DBG)." 
+                      : "Ductile cast iron sliding shoe with replaceable low-friction polyamide liner, automatic oil lubricator, and M16 precision backlash adjustment bolts."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
                     <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
@@ -1434,13 +1498,13 @@ EOF`;
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="text-lg font-bold text-red-400 font-mono">
-                      {isFa ? "ترمز ایمنی پاراشوت تدریجی گوه‌ای (Progressive Safety Gear)" : "Progressive Safety Gear Assembly"}
+                      {isFa ? "ترمز ایمنی پاراشوت تدریجی Dynatech / Cobianchi" : "Progressive Safety Gear Assembly"}
                     </h4>
                     <span className="text-xs font-mono text-emerald-400 font-bold">بند ۹-۸ استاندارد ۶۳۰۳</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "نصب شده در زیر تیر ایمنی یوک کابین (Safety Plank). مجهز به لنت‌های گوه‌ای فولاد فورج سخت‌کاری‌شده که با درگیر شدن بر روی تیغه ریل، کابین را با شتاب شتاب منفی کنترل‌شده بین 0.2g تا 1.0g متوقف می‌سازد." 
+                      ? "نصب شده در زیر تیر ایمنی یوک کابین (Safety Plank). مجهز به لنت‌های گوه‌ای فولاد فورج سخت‌کاری‌شده که با درگیر شدن بر روی تیغه ریل، کابین را با شتاب منفی کنترل‌شده بین 0.2g تا 1.0g متوقف می‌سازد." 
                       : "Mounted on lower car sling plank with forged alloy steel wedges stopping the fully loaded car smoothly between 0.2g and 1.0g."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
@@ -1469,13 +1533,13 @@ EOF`;
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="text-lg font-bold text-sky-400 font-mono">
-                      {isFa ? "ریل‌های راهنمای نورد سرد و ماشین‌کاری شده (ISO 7465 T-Rails)" : "Machined & Cold-Drawn Guide Rails (ISO 7465)"}
+                      {isFa ? "ریل‌های راهنمای نورد سرد و ماشین‌کاری شده Monteferro (ISO 7465)" : "Monteferro ISO 7465 T-Rails"}
                     </h4>
                     <span className="text-xs font-mono text-emerald-400 font-bold">استاندارد ملی ISIRI 6303</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {isFa 
-                      ? "مقاطع فولادی T شکل مطابق استاندارد بین‌المللی ISO 7465 و استاندارد ملی ایران. مقاطع T70/A برای وزنه تعادل و T89/B و T125/B برای کابین با اتصال فاق و زبانه (Tongue & Groove) و صفحات اتصال ماهیچه‌ای تقویت‌شده." 
+                      ? "مقاطع فولادی T شکل مونتَفِرو ایتالیا مطابق استاندارد بین‌المللی ISO 7465. مقاطع T70-1/A برای وزنه تعادل و T89/B و T125/B برای کابین با اتصال فاق و زبانه (Tongue & Groove) و صفحات اتصال ماهیچه‌ای تقویت‌شده." 
                       : "Precision cold-drawn and machined T-section rails (T70, T89, T125) with tongue-and-groove joints and reinforced fishplates."}
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-2">
@@ -1504,7 +1568,7 @@ EOF`;
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h4 className="text-lg font-bold text-amber-400 font-mono">
-                      {isFa ? "ضربه‌گیرهای هیدرولیک اتلاف انرژی کف چاهک (Hydraulic Oil Buffers)" : "Hydraulic Dissipation Energy Oil Buffers"}
+                      {isFa ? "ضربه‌گیرهای هیدرولیک اتلاف انرژی ALGI / ACLA (Germany)" : "ALGI & ACLA Hydraulic Energy Dissipation Buffers"}
                     </h4>
                     <span className="text-xs font-mono text-emerald-400 font-bold">بند ۱۰-۳ استاندارد ۶۳۰۳</span>
                   </div>
@@ -1534,6 +1598,439 @@ EOF`;
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ==============================================================
+            TAB 4: DIGIPARA 2020 COMPONENT CATALOG & BIM LIBRARY
+        ============================================================== */}
+        {activeTab === "digipara_catalog" && (
+          <div className="space-y-6">
+            {/* Catalog Sub-category Navigator */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: "machines", labelFa: "موتورها و محرکه‌ها (Machines)", count: "1,200+" },
+                  { id: "doors", labelFa: "سامانه‌های درب (Doors)", count: "1,800+" },
+                  { id: "rails", labelFa: "ریل‌های راهنما (Guide Rails)", count: "197" },
+                  { id: "safety", labelFa: "گاورنر و پاراشوت (Safety)", count: "720+" },
+                  { id: "buffers", labelFa: "ضربه‌گیرها (Buffers)", count: "331" },
+                  { id: "materials", labelFa: "متریال‌های کابین دیجی‌پارا", count: "Assets" },
+                ].map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCatalogCategory(cat.id as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5",
+                      catalogCategory === cat.id
+                        ? "bg-amber-500 text-slate-950 shadow-sm"
+                        : isDark ? "bg-slate-800 text-slate-300 hover:text-white" : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-100"
+                    )}
+                  >
+                    <span>{isFa ? cat.labelFa : cat.id.toUpperCase()}</span>
+                    <span className={cn(
+                      "text-[10px] px-1.5 py-0.2 rounded font-bold",
+                      catalogCategory === cat.id ? "bg-slate-900/30 text-slate-950" : "bg-slate-700/50 text-slate-400"
+                    )}>
+                      {cat.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
+                <Database className="w-4 h-4 text-emerald-400" />
+                <span>LD50.MDF SQL DATABASE LINKED</span>
+              </div>
+            </div>
+
+            {/* Catalog Content Panels */}
+            {catalogCategory === "machines" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold font-mono text-white">
+                    {isFa ? "محرکه‌های کششی و موتورهای گیرلس استاندارد دیجی‌پارا لیفت‌دیزاینر" : "DigiPara Certified Traction Machines"}
+                  </h4>
+                  <span className="text-xs font-mono text-slate-400">
+                    {isFa ? "با کلیک روی هر موتور، ابعاد فلکه در نقشه‌ها بلافاصله اعمال می‌شود" : "Click to apply machine to CAD canvas"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    {
+                      name: "Ziehl-Abegg ZAtop SM200.40C",
+                      country: "Germany",
+                      power: "14.7 kW",
+                      torque: "650 Nm",
+                      sheave: 400,
+                      fstat: "40 kN",
+                      type: "PMSM Gearless",
+                      speed: "2.5 m/s",
+                      descFa: "پرچمدار آلمان با فلکه ۴۰۰mm و ترمز دوبل MFB با راندمان ۹۴٪"
+                    },
+                    {
+                      name: "Ziehl-Abegg ZAtop SM250.60B",
+                      country: "Germany",
+                      power: "27.2 kW",
+                      torque: "1150 Nm",
+                      sheave: 520,
+                      fstat: "70 kN",
+                      type: "High-Rise PMSM",
+                      speed: "4.0 m/s",
+                      descFa: "موتور فوق‌سنگین برج‌های مرتفع با فلکه ۵۲۰mm و گشتاور ۱۱۵۰ نیوتن‌متر"
+                    },
+                    {
+                      name: "Alberto Sassi G-400 T2",
+                      country: "Italy",
+                      power: "11.0 kW",
+                      torque: "520 Nm",
+                      sheave: 400,
+                      fstat: "35 kN",
+                      type: "Gearless PMSM",
+                      speed: "2.0 m/s",
+                      descFa: "موتور کم‌مصرف ایتالیایی با دوام حرارتی استثنایی مخصوص ساختمان‌های لوکس"
+                    },
+                    {
+                      name: "Alberto Sassi Toro Geared",
+                      country: "Italy",
+                      power: "15.0 kW",
+                      torque: "Gear Box",
+                      sheave: 480,
+                      fstat: "45 kN",
+                      type: "Geared Drive",
+                      speed: "1.6 m/s",
+                      descFa: "گیربکس پرقدرت دنده‌برنجی ایتالیایی برای بارهای ضربه‌ای سنگین"
+                    },
+                    {
+                      name: "Montanari Giulio MGV25",
+                      country: "Italy",
+                      power: "9.5 kW",
+                      torque: "450 Nm",
+                      sheave: 400,
+                      fstat: "30 kN",
+                      type: "Gearless MRL",
+                      speed: "2.0 m/s",
+                      descFa: "موتور کامپکت بدون موتورخانه مونتاناری با بدنه آلومینیومی سبک"
+                    },
+                    {
+                      name: "Wittur WSG-S2.3 Gearless",
+                      country: "Germany",
+                      power: "6.5 kW",
+                      torque: "350 Nm",
+                      sheave: 320,
+                      fstat: "22 kN",
+                      type: "Ultra-MRL",
+                      speed: "1.6 m/s",
+                      descFa: "طراحی فوق باریک ۴۱۵mm جهت نصب مستقیم بر روی ریل راهنما در بالاسری"
+                    },
+                  ].map((m, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => {
+                        setSelectedMachineBrand(m.name);
+                        setSheaveDia(m.sheave);
+                      }}
+                      className={cn(
+                        "p-4 rounded-xl border transition-all cursor-pointer relative",
+                        selectedMachineBrand === m.name
+                          ? "bg-sky-500/10 border-sky-400 shadow-md ring-1 ring-sky-400"
+                          : isDark ? "bg-slate-900 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700 font-bold">
+                          {m.country}
+                        </span>
+                        {selectedMachineBrand === m.name && (
+                          <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 font-bold">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            {isFa ? "انتخاب شده" : "Active"}
+                          </span>
+                        )}
+                      </div>
+
+                      <h5 className="text-sm font-bold font-mono text-white mt-2">
+                        {m.name}
+                      </h5>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        {isFa ? m.descFa : m.type}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-800/80 text-[11px] font-mono">
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "قطر فلکه کششی:" : "Sheave:"}</span>
+                          <span className="text-amber-400 font-bold">Ø{m.sheave} mm</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "توان نامی:" : "Power:"}</span>
+                          <span className="text-emerald-400 font-bold">{m.power}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "بار استاتیک مجاز:" : "F_stat:"}</span>
+                          <span className="text-slate-300">{m.fstat}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "سرعت بیشینه:" : "Max Speed:"}</span>
+                          <span className="text-sky-400">{m.speed}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Doors Category */}
+            {catalogCategory === "doors" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold font-mono text-white">
+                    {isFa ? "سامانه‌های درب طبقه و کابین دیجی‌پارا (Fermator, Wittur, Sematic, Meiller)" : "DigiPara Certified Landing & Car Door Systems"}
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    {
+                      brand: "Fermator 40/10 Premium VVVF",
+                      maker: "Spain",
+                      type: "2P-TEL / 2P-CEN",
+                      depth: "125 mm",
+                      fire: "EN 81-58 E120",
+                      cycles: "> 1,000,000",
+                      descFa: "پرمصرف‌ترین درب اتوماتیک آسانسور ایران با موتور سنکرون و اینورتر هوشمند VVVF4+"
+                    },
+                    {
+                      brand: "Fermator 50/11 Slim Series",
+                      maker: "Spain",
+                      type: "2P-TEL Compact",
+                      depth: "100 mm",
+                      fire: "EN 81-58 EW60",
+                      cycles: "> 800,000",
+                      descFa: "طراحی فوق باریک سیل مخصوص چاه‌های با عمق کم جهت بیشینه‌سازی عمق مفید کابین"
+                    },
+                    {
+                      brand: "Wittur / Selcom Hydra Series",
+                      maker: "Germany / Italy",
+                      type: "2P / 3P / 4P Central",
+                      depth: "140 mm",
+                      fire: "EN 81-58 EI120",
+                      cycles: "> 1,500,000",
+                      descFa: "درب سنگین پرتردد پروژه‌های شاخص، مراکز خرید و هتل‌ها با سیستم ضدلرزش قرقره‌ها"
+                    },
+                    {
+                      brand: "Wittur Fineline Ultra-Compact",
+                      maker: "Germany",
+                      type: "2P Telescopic",
+                      depth: "45 mm sill",
+                      fire: "EN 81-58 E60",
+                      cycles: "> 600,000",
+                      descFa: "کم‌عمق‌ترین درب جهان با ضخامت پاکت ۴۵ میلی‌متر برای آسانسورهای نوسازی چاه‌های قدیمی"
+                    },
+                    {
+                      brand: "Sematic 2000 B-HR High Rise",
+                      maker: "Italy",
+                      type: "2P / 4P Central Heavy",
+                      depth: "160 mm",
+                      fire: "EN 81-58 EI60",
+                      cycles: "> 2,000,000",
+                      descFa: "درب تقویت‌شده ویژه برج‌های بلند با مقاومت در برابر اختلاف فشار هوای ناشی از پیستون چاه"
+                    },
+                    {
+                      brand: "Meiller TTK Heavy Duty",
+                      maker: "Germany",
+                      type: "3P Telescopic Industrial",
+                      depth: "175 mm",
+                      fire: "EN 81-58 E120",
+                      cycles: "> 1,200,000",
+                      descFa: "درب‌های فولادی نورد سرد آلمان ویژه آسانسورهای باربر، بیمارستانی و صنعتی"
+                    },
+                  ].map((d, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => setSelectedDoorBrand(d.brand)}
+                      className={cn(
+                        "p-4 rounded-xl border transition-all cursor-pointer",
+                        selectedDoorBrand === d.brand
+                          ? "bg-blue-500/10 border-blue-400 shadow-md ring-1 ring-blue-400"
+                          : isDark ? "bg-slate-900 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-blue-400 border border-slate-700 font-bold">
+                          {d.maker}
+                        </span>
+                        {selectedDoorBrand === d.brand && (
+                          <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 font-bold">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            {isFa ? "فعال" : "Active"}
+                          </span>
+                        )}
+                      </div>
+
+                      <h5 className="text-sm font-bold font-mono text-white mt-2">
+                        {d.brand}
+                      </h5>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        {isFa ? d.descFa : d.type}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-800/80 text-[11px] font-mono">
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "ضخامت سیل پاگرد:" : "Sill Depth:"}</span>
+                          <span className="text-amber-400 font-bold">{d.depth}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "تأییدیه حریق:" : "Fire Class:"}</span>
+                          <span className="text-emerald-400 font-bold">{d.fire}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "طول عمر آزمون:" : "Test Life:"}</span>
+                          <span className="text-slate-300">{d.cycles}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">{isFa ? "تیپ مکانیزم:" : "Type:"}</span>
+                          <span className="text-sky-400">{d.type}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Guide Rails ISO 7465 Category */}
+            {catalogCategory === "rails" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold font-mono text-white">
+                    {isFa ? "ریل‌های راهنمای آسانسور بر اساس استاندارد بین‌المللی ISO 7465 (Monteferro & Savera)" : "ISO 7465 Guide Rails Catalog"}
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { name: "T70-1/A", b: 70, h: 65, k: 9, mass: 5.02, jx: 41.3, jy: 19.3, use: "کادر وزنه تعادل تا ۱۰۰۰kg" },
+                    { name: "T75-3/B", b: 75, h: 62, k: 10, mass: 5.80, jx: 44.8, jy: 22.1, use: "کادر وزنه و کابین‌های سبک" },
+                    { name: "T82/B", b: 82, h: 68, k: 9, mass: 5.75, jx: 52.1, jy: 28.5, use: "کابین‌های ۴ تا ۶ نفره" },
+                    { name: "T89/B", b: 89, h: 62, k: 16, mass: 8.27, jx: 59.8, jy: 52.4, use: "استاندارد ۶ تا ۸ نفره (محبوب)" },
+                    { name: "T90/B", b: 90, h: 75, k: 16, mass: 12.20, jx: 102.5, jy: 82.0, use: "ساختمان‌های ۱۰ تا ۱۵ طبقه" },
+                    { name: "T125/B", b: 125, h: 82, k: 16, mass: 17.80, jx: 151.0, jy: 159.0, use: "ظرفیت‌های ۱۰۰۰ تا ۱۶۰۰kg" },
+                    { name: "T127-1/B", b: 127, h: 89, k: 16, mass: 22.50, jx: 232.0, jy: 215.0, use: "سرعت‌های بالا (v ≥ 2.5 m/s)" },
+                    { name: "T140-1/B", b: 140, h: 108, k: 19, mass: 27.40, jx: 375.0, jy: 310.0, use: "آسانسورهای سنگین باربر ۲۰۰۰kg" },
+                  ].map((r, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => setRailType(r.name.split("-")[0] as any)}
+                      className={cn(
+                        "p-3.5 rounded-xl border transition-all cursor-pointer",
+                        railType === r.name.split("-")[0]
+                          ? "bg-sky-500/10 border-sky-400 shadow-md ring-1 ring-sky-400"
+                          : isDark ? "bg-slate-900 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold font-mono text-sky-400">{r.name}</span>
+                        {railType === r.name.split("-")[0] && (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        )}
+                      </div>
+
+                      <span className="text-[10px] text-slate-400 block mt-1">{r.use}</span>
+
+                      <div className="grid grid-cols-2 gap-1.5 mt-3 pt-2 border-t border-slate-800 text-[10px] font-mono text-slate-300">
+                        <div>بال B: <span className="text-white font-bold">{r.b} mm</span></div>
+                        <div>جان H: <span className="text-white font-bold">{r.h} mm</span></div>
+                        <div>تیغه K: <span className="text-amber-400 font-bold">{r.k} mm</span></div>
+                        <div>جرم: <span className="text-emerald-400 font-bold">{r.mass} kg/m</span></div>
+                        <div>Jx: <span className="text-slate-400">{r.jx} cm⁴</span></div>
+                        <div>Jy: <span className="text-slate-400">{r.jy} cm⁴</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cabin Finishes & Textures (از آرشیو متریال‌های دیجی‌پارا C:\ProgramData\DigiPara\2020\dcc\DataPool\Assets) */}
+            {catalogCategory === "materials" && (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-base font-bold font-mono text-white">
+                    {isFa ? "متریال‌های معماری دیواره و کف کابین (DigiPara Asset Library)" : "DigiPara Cabin Finishes & Textures"}
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {isFa ? "انتخاب مستقیم متریال دیواره و کف؛ رنگ و هاشور پلان به صورت بلادرنگ تغییر می‌کند" : "Real-time cabin texture & material mapping"}
+                  </p>
+                </div>
+
+                {/* Wall Finishes */}
+                <div className="space-y-3">
+                  <span className="text-xs font-mono font-bold text-sky-400 block">
+                    {isFa ? "۱. روکش دیواره‌های کابین (Wall Claddings):" : "1. Cabin Wall Claddings:"}
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    {[
+                      { id: "stainless_hairline", name: "استیل خش‌دار ضدزنگ", color: "#94a3b8", desc: "Stainless Steel Hairline" },
+                      { id: "mirror_gold", name: "استیل سوپر میرور طلایی", color: "#d4af37", desc: "PVD Gold Mirror" },
+                      { id: "carrara_marble", name: "سنگ مرمر سفید کارارا", color: "#f8fafc", desc: "Carrara White Marble" },
+                      { id: "walnut_wood", name: "چوب طبیعی گردو", color: "#92400e", desc: "American Walnut Veneer" },
+                      { id: "glass_ral3003", name: "شیشه لاکی قرمز روبی", color: "#b91c1c", desc: "Back Painted Glass RAL 3003" },
+                    ].map(mat => (
+                      <div
+                        key={mat.id}
+                        onClick={() => setCabinWallFinish(mat.id as any)}
+                        className={cn(
+                          "p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between",
+                          cabinWallFinish === mat.id
+                            ? "bg-sky-500/10 border-sky-400 ring-1 ring-sky-400"
+                            : isDark ? "bg-slate-900 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full border border-slate-700 shrink-0" style={{ backgroundColor: mat.color }} />
+                          <span className="text-xs font-bold text-white font-mono truncate">{mat.name}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-2 block">{mat.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Floor Finishes */}
+                <div className="space-y-3 pt-2">
+                  <span className="text-xs font-mono font-bold text-amber-400 block">
+                    {isFa ? "۲. متریال کف‌پوش کابین (Floor Finishes):" : "2. Cabin Floor Finishes:"}
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { id: "carrara_marble", name: "سنگ طبیعی مرمر کارارا", color: "#f1f5f9", desc: "Italian Carrara Stone" },
+                      { id: "granite_black", name: "گرانیت مشکی نرو", color: "#0f172a", desc: "Granitboden Nero" },
+                      { id: "damascus_red", name: "مرمر سرخ دمشقی", color: "#7f1d1d", desc: "Red Damascus Stone" },
+                      { id: "bulb_plate", name: "ورق آج‌دار آلومینیومی", color: "#64748b", desc: "Bulb Plate Checker" },
+                    ].map(mat => (
+                      <div
+                        key={mat.id}
+                        onClick={() => setCabinFloorFinish(mat.id as any)}
+                        className={cn(
+                          "p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between",
+                          cabinFloorFinish === mat.id
+                            ? "bg-amber-500/10 border-amber-400 ring-1 ring-amber-400"
+                            : isDark ? "bg-slate-900 border-slate-800 hover:border-slate-700" : "bg-white border-slate-200"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full border border-slate-700 shrink-0" style={{ backgroundColor: mat.color }} />
+                          <span className="text-xs font-bold text-white font-mono truncate">{mat.name}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 mt-2 block">{mat.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
