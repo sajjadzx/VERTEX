@@ -171,8 +171,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const [speed, setSpeed] = useState<number>(2.0); // m/s
   const [suspension, setSuspension] = useState<SuspensionType>("2_1_underslung");
   const [cwtPosition, setCwtPosition] = useState<CounterweightPosition>("rear");
-  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin">("3d");
-  const [wallMode, setWallMode] = useState<"cutaway" | "transparent" | "wireframe">("cutaway");
+  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin" | "structure">("3d");
+  const [wallMode, setWallMode] = useState<"steel-structure" | "cutaway" | "transparent" | "wireframe">("steel-structure");
   const [activeSideTab, setActiveSideTab] = useState<"kinematics" | "calculations" | "heights" | "standards">("kinematics");
 
   // Display toggles
@@ -306,6 +306,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       cameraOrbitRef.current = { theta: 0.45, phi: 0.65, radius: 15, targetY: 10 };
     } else if (viewMode === "cabin") {
       cameraOrbitRef.current = { theta: 0.2, phi: 1.45, radius: 4.5, targetY: currentYRef.current };
+    } else if (viewMode === "structure") {
+      cameraOrbitRef.current = { theta: 0.72, phi: 0.65, radius: 36, targetY: 2.5 };
     }
     updateCameraPosition();
   }, [viewMode, updateCameraPosition]);
@@ -408,51 +410,116 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     grid.position.y = pitFloorY - 0.05;
     scene.add(grid);
 
-    // A) Architectural Concrete Columns & Ring Beams
+    // A) STRUCTURAL STEEL HOISTWAY FRAMEWORK (اسکلت فلزی و آهن‌کشی کامل چاهک)
     const wallGroup = new THREE.Group();
-    const colMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7, metalness: 0.1 });
-    const colGeo = new THREE.BoxGeometry(0.5, shaftHeight, 0.5);
+    const isSteelMode = wallMode === "steel-structure";
+
+    // 4 Corner Steel Columns (نبشی دوبل / قوطی آهن ساختمانی St37 با رنگ زغالی سازه‌ای)
+    const steelColMat = new THREE.MeshStandardMaterial({ 
+      color: isSteelMode ? 0x1e293b : 0x334155, 
+      metalness: 0.85, 
+      roughness: 0.25 
+    });
+    const colGeo = new THREE.BoxGeometry(0.38, shaftHeight, 0.38);
+    const basePlateMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.2 });
+    const gussetMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 }); // Primer Gold Accent
+
     [
       [-halfW, 0, -halfD],
       [halfW, 0, -halfD],
       [-halfW, 0, halfD],
       [halfW, 0, halfD]
     ].forEach(([cx, cy, cz]) => {
-      const col = new THREE.Mesh(colGeo, colMat);
+      // Main Steel Column
+      const col = new THREE.Mesh(colGeo, steelColMat);
       col.position.set(cx, (pitFloorY + overheadCeilingY) / 2, cz);
+      col.castShadow = true;
       wallGroup.add(col);
+
+      // Pit Steel Baseplate (صفحه‌ستون ۳۰×۳۰ کف چاهک با لچکی‌ها)
+      const baseplate = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.08, 0.72), basePlateMat);
+      baseplate.position.set(cx, pitFloorY + 0.04, cz);
+      baseplate.receiveShadow = true;
+      wallGroup.add(baseplate);
+
+      // 4 Heavy Anchor Bolts per column
+      [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]].forEach(([bx, bz]) => {
+        const bolt = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.024, 0.024, 0.16, 12),
+          new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+        );
+        bolt.position.set(cx + bx, pitFloorY + 0.12, cz + bz);
+        wallGroup.add(bolt);
+      });
+
+      // Tie Plates (تسمه‌های اتصال دوبل نبشی ستون‌ها در فواصل ارتفاعی)
+      for (let ty = pitFloorY + 1.2; ty < overheadCeilingY; ty += 1.8) {
+        const tiePlate = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.42), gussetMat);
+        tiePlate.position.set(cx, ty, cz);
+        wallGroup.add(tiePlate);
+      }
     });
 
-    // Horizontal Steel Ring Beams (کلاف‌کشی نبشی/ناودانی هر ۲.۵ متر)
-    const beamMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.6, roughness: 0.3 });
-    for (let by = pitFloorY + 2.0; by < overheadCeilingY; by += (2.5 * mTo3D)) {
-      const bRear = new THREE.Mesh(new THREE.BoxGeometry(sw3D, 0.28, 0.28), beamMat);
+    // Horizontal Steel Ring Beams (کلاف‌کشی ناودانی و نبشی دور تا دور چاه در تمام ۴ وجه)
+    const beamMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+    for (let by = pitFloorY + 1.8; by < overheadCeilingY; by += (2.2 * mTo3D)) {
+      // Rear Ring Beam
+      const bRear = new THREE.Mesh(new THREE.BoxGeometry(sw3D, 0.22, 0.22), beamMat);
       bRear.position.set(0, by, -halfD);
       wallGroup.add(bRear);
 
-      const bLeft = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, sd3D), beamMat);
+      // Left Ring Beam
+      const bLeft = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, sd3D), beamMat);
       bLeft.position.set(-halfW, by, 0);
       wallGroup.add(bLeft);
 
-      const bRight = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, sd3D), beamMat);
+      // Right Ring Beam
+      const bRight = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, sd3D), beamMat);
       bRight.position.set(halfW, by, 0);
       wallGroup.add(bRight);
+
+      // Front Header Ring Beam (کلاف افقی جلو - بالای درب‌ها)
+      const bFront = new THREE.Mesh(new THREE.BoxGeometry(sw3D, 0.22, 0.22), beamMat);
+      bFront.position.set(0, by, halfD);
+      wallGroup.add(bFront);
+
+      // Corner Connection Gusset Plates (ورق‌های لچکی اتصال کلاف به ستون در ۴ گوشه)
+      [
+        [-halfW + 0.18, -halfD + 0.18],
+        [halfW - 0.18, -halfD + 0.18],
+        [-halfW + 0.18, halfD - 0.18],
+        [halfW - 0.18, halfD - 0.18]
+      ].forEach(([gx, gz]) => {
+        const gusset = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.18), gussetMat);
+        gusset.position.set(gx, by, gz);
+        wallGroup.add(gusset);
+      });
     }
 
-    // Wall Panel (Cutaway / Transparent / Wireframe)
+    // Heavy Overhead Machine Room Support I-Beams (تیرآهن‌های دوبل نمره ۱۸ و ۲۰ سقف چاهک)
+    const iBeamMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 });
+    [-sw3D * 0.28, sw3D * 0.28].forEach((ix) => {
+      const iBeam = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.42, sd3D + 0.6), iBeamMat);
+      iBeam.position.set(ix, overheadCeilingY - 0.2, 0);
+      wallGroup.add(iBeam);
+    });
+
+    // Wall Panel (Cutaway / Transparent / Wireframe / Steel-Structure)
     const wallPanelMat = new THREE.MeshStandardMaterial({ 
       color: 0xe2e8f0, 
       roughness: 0.4, 
       transparent: true, 
-      opacity: wallMode === "wireframe" ? 0.08 : wallMode === "transparent" ? 0.35 : 0.85 
+      opacity: isSteelMode ? 0.0 : wallMode === "wireframe" ? 0.08 : wallMode === "transparent" ? 0.35 : 0.85 
     });
-    const backWall = new THREE.Mesh(new THREE.BoxGeometry(sw3D, shaftHeight, 0.08), wallPanelMat);
-    backWall.position.set(0, (pitFloorY + overheadCeilingY) / 2, -halfD);
-    wallGroup.add(backWall);
+    if (!isSteelMode) {
+      const backWall = new THREE.Mesh(new THREE.BoxGeometry(sw3D, shaftHeight, 0.08), wallPanelMat);
+      backWall.position.set(0, (pitFloorY + overheadCeilingY) / 2, -halfD);
+      wallGroup.add(backWall);
 
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.08, shaftHeight, sd3D), wallPanelMat);
-    leftWall.position.set(-halfW, (pitFloorY + overheadCeilingY) / 2, 0);
-    wallGroup.add(leftWall);
+      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.08, shaftHeight, sd3D), wallPanelMat);
+      leftWall.position.set(-halfW, (pitFloorY + overheadCeilingY) / 2, 0);
+      wallGroup.add(leftWall);
+    }
 
     scene.add(wallGroup);
 
@@ -1721,6 +1788,20 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>{isFa ? "طراحی داخل کابین ۳D" : "Cabin 3D"}</span>
           </button>
+          <button
+            onClick={() => {
+              setViewMode("structure");
+              setWallMode("steel-structure");
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+              viewMode === "structure" ? "bg-emerald-600 text-white shadow-sm font-black" : "text-emerald-400 hover:text-emerald-300"
+            )}
+            title={isFa ? "مشاهده اسکلت فلزی، ستون‌های ۴ گوشه، کلاف‌های ناودانی و آهن‌کشی چاه" : "Inspect Steel Hoistway Structure"}
+          >
+            <Cpu className="w-3.5 h-3.5 text-emerald-300" />
+            <span>{isFa ? "اسکلت و آهن‌کشی چاه" : "Steel Structure"}</span>
+          </button>
         </div>
       </div>
 
@@ -2050,19 +2131,20 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
                   <span className="text-xs font-mono font-bold text-vertex-steel block">
                     {isFa ? "نمای سازه دیواره چاهک:" : "Wall Cutaway Mode:"}
                   </span>
-                  <div className="grid grid-cols-3 gap-1 text-xs font-mono">
-                    {(["cutaway", "transparent", "wireframe"] as const).map(mode => (
+                  <div className="grid grid-cols-2 gap-1.5 text-xs font-mono">
+                    {(["steel-structure", "cutaway", "transparent", "wireframe"] as const).map(mode => (
                       <button
                         key={mode}
                         onClick={() => setWallMode(mode)}
                         className={cn(
-                          "py-1.5 rounded-lg border font-bold transition-all",
+                          "py-1.5 rounded-lg border font-bold transition-all text-center",
                           wallMode === mode 
-                            ? "bg-slate-900 text-white border-slate-900" 
+                            ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
                             : "bg-white text-slate-600 border-vertex-border hover:bg-slate-50"
                         )}
                       >
-                        {mode === "cutaway" ? (isFa ? "برش باز" : "Cutaway") :
+                        {mode === "steel-structure" ? (isFa ? "آهن‌کشی چاه" : "Steel Frame") :
+                         mode === "cutaway" ? (isFa ? "برش باز" : "Cutaway") :
                          mode === "transparent" ? (isFa ? "نیمه شفاف" : "Transparent") : (isFa ? "خطی" : "Wireframe")}
                       </button>
                     ))}
