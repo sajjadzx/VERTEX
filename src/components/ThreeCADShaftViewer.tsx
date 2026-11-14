@@ -26,6 +26,7 @@ import {
   MoveHorizontal, 
   Loader2,
   Building,
+  Building2,
   DoorOpen,
   DoorClosed,
   Calculator,
@@ -171,7 +172,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const [speed, setSpeed] = useState<number>(2.0); // m/s
   const [suspension, setSuspension] = useState<SuspensionType>("2_1_underslung");
   const [cwtPosition, setCwtPosition] = useState<CounterweightPosition>("rear");
-  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin" | "structure">("3d");
+  const [motorType, setMotorType] = useState<"geared" | "gearless">("geared");
+  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin" | "structure" | "machineroom">("3d");
   const [wallMode, setWallMode] = useState<"steel-structure" | "cutaway" | "transparent" | "wireframe">("steel-structure");
   const [activeSideTab, setActiveSideTab] = useState<"kinematics" | "calculations" | "heights" | "standards">("kinematics");
 
@@ -308,6 +310,8 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       cameraOrbitRef.current = { theta: 0.2, phi: 1.45, radius: 4.5, targetY: currentYRef.current };
     } else if (viewMode === "structure") {
       cameraOrbitRef.current = { theta: 0.72, phi: 0.65, radius: 36, targetY: 2.5 };
+    } else if (viewMode === "machineroom") {
+      cameraOrbitRef.current = { theta: 0.45, phi: 0.82, radius: 14, targetY: 10.5 };
     }
     updateCameraPosition();
   }, [viewMode, updateCameraPosition]);
@@ -601,17 +605,71 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       });
     }
 
-    // Heavy-Duty Steel Rail Brackets (براکت‌های ریل و انکر بولت‌ها هر ۲.۵ متر)
+    // Heavy-Duty Steel Rail Brackets (براکت‌های ریل کابین T89 و ریل وزنه T50 با لقمه‌ها و پیچ‌ها)
     if (showBrackets) {
-      const bracketMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7 });
-      for (let brY = pitFloorY + 2.0; brY < overheadCeilingY; brY += (2.5 * mTo3D)) {
-        // Left Car Rail Bracket
-        const brL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.14, 0.35), bracketMat);
-        brL.position.set(-halfW + 0.28, brY, 0);
-        // Right Car Rail Bracket
-        const brR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.14, 0.35), bracketMat);
-        brR.position.set(halfW - 0.28, brY, 0);
-        railGroup.add(brL, brR);
+      const bracketMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+      const clipMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 }); // Gold/Yellow Primer Clips
+      const boltMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+
+      for (let brY = pitFloorY + 1.8; brY < overheadCeilingY; brY += (2.2 * mTo3D)) {
+        // 1. Left Car Rail Bracket (L-shaped dual angle arm)
+        const brL_Base = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.28), bracketMat);
+        brL_Base.position.set(-halfW + 0.28, brY, 0);
+        const brL_Stiffener = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.18, 0.08), bracketMat);
+        brL_Stiffener.position.set(-halfW + 0.35, brY - 0.08, 0);
+        railGroup.add(brL_Base, brL_Stiffener);
+
+        // Left Rail Clips (لقمه‌های M12 بالا و پایین بال ریل T89)
+        [-0.1, 0.1].forEach(cz => {
+          const clip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.06), clipMat);
+          clip.position.set(-halfW + 0.55 + 0.08, brY + 0.06, cz);
+          const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.08, 8), boltMat);
+          bolt.position.set(-halfW + 0.55 + 0.08, brY + 0.1, cz);
+          railGroup.add(clip, bolt);
+        });
+
+        // 2. Right Car Rail Bracket
+        const brR_Base = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.28), bracketMat);
+        brR_Base.position.set(halfW - 0.28, brY, 0);
+        const brR_Stiffener = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.18, 0.08), bracketMat);
+        brR_Stiffener.position.set(halfW - 0.35, brY - 0.08, 0);
+        railGroup.add(brR_Base, brR_Stiffener);
+
+        // Right Rail Clips (لقمه‌های M12)
+        [-0.1, 0.1].forEach(cz => {
+          const clip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.06), clipMat);
+          clip.position.set(halfW - 0.55 - 0.08, brY + 0.06, cz);
+          const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.08, 8), boltMat);
+          bolt.position.set(halfW - 0.55 - 0.08, brY + 0.1, cz);
+          railGroup.add(clip, bolt);
+        });
+
+        // 3. Counterweight Rail Brackets (براکت‌های دوبل ریل وزنه تعادل T50)
+        if (cwtPosition === "rear") {
+          [-1.2, 1.2].forEach(rx => {
+            const cwtBr = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.45), bracketMat);
+            cwtBr.position.set(rx, brY, -halfD + 0.35);
+            const cwtClip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.05), clipMat);
+            cwtClip.position.set(rx, brY + 0.05, -halfD + 0.58);
+            railGroup.add(cwtBr, cwtClip);
+          });
+        } else if (cwtPosition === "right") {
+          [-0.8, 0.8].forEach(rz => {
+            const cwtBr = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.24), bracketMat);
+            cwtBr.position.set(halfW - 0.35, brY, rz);
+            const cwtClip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.06), clipMat);
+            cwtClip.position.set(halfW - 0.58, brY + 0.05, rz);
+            railGroup.add(cwtBr, cwtClip);
+          });
+        } else if (cwtPosition === "left") {
+          [-0.8, 0.8].forEach(rz => {
+            const cwtBr = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.24), bracketMat);
+            cwtBr.position.set(-halfW + 0.35, brY, rz);
+            const cwtClip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.06), clipMat);
+            cwtClip.position.set(-halfW + 0.58, brY + 0.05, rz);
+            railGroup.add(cwtBr, cwtClip);
+          });
+        }
       }
     }
 
@@ -742,52 +800,243 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
       machineGroup.add(hydGroup);
     } else {
-      machineGroup.position.set(0, overheadCeilingY - 0.8, 0);
+      // -----------------------------------------------------------------------
+      // COMPLETE 3D MACHINE ROOM (فضای کامل سه‌بعدی موتورخانه، تابلو فرمان و جزئیات)
+      // -----------------------------------------------------------------------
+      const mrFloorY = overheadCeilingY;
+      const mrCeilY = mrFloorY + 3.4; // 3.4m machine room height
+      const mrW = sw3D + 1.8;
+      const mrD = sd3D + 1.8;
 
-      // Heavy Machine Bedplate Steel Beams (شاسی دوبل ناودانی با لاستیک لرزه‌گیر)
-      const bedplate = new THREE.Mesh(
-        new THREE.BoxGeometry(sw3D - 0.6, 0.4, 1.8),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 })
+      // 1. Concrete Floor Slab with Cable Passages (دال بتنی کف موتورخانه با شابلون عبور سیم‌بکسل)
+      const mrSlabMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+      const mrFloorSlab = new THREE.Mesh(new THREE.BoxGeometry(mrW, 0.28, mrD), mrSlabMat);
+      mrFloorSlab.position.set(0, mrFloorY - 0.14, 0);
+      machineGroup.add(mrFloorSlab);
+
+      // Machine Room Ceiling Slab
+      const mrCeilSlab = new THREE.Mesh(new THREE.BoxGeometry(mrW, 0.22, mrD), mrSlabMat);
+      mrCeilSlab.position.set(0, mrCeilY, 0);
+      machineGroup.add(mrCeilSlab);
+
+      // Lifting I-Beam with 2-Ton Safety Hook (تیرآهن حمال و قلاب سقف موتورخانه ۲ تنی)
+      const hookBeam = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24, 0.32, mrD - 0.4),
+        new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85 })
       );
+      hookBeam.position.set(0, mrCeilY - 0.16, 0);
+      machineGroup.add(hookBeam);
+
+      const hookTorus = new THREE.Mesh(
+        new THREE.TorusGeometry(0.18, 0.04, 12, 24),
+        new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9 })
+      );
+      hookTorus.position.set(0, mrCeilY - 0.42, 0);
+      hookTorus.rotation.y = Math.PI / 2;
+      machineGroup.add(hookTorus);
+
+      // Machine Room Enclosure Walls (Cutaway / Semi-transparent)
+      const mrWallMat = new THREE.MeshStandardMaterial({ 
+        color: 0xe2e8f0, 
+        roughness: 0.5, 
+        transparent: true, 
+        opacity: wallMode === "wireframe" ? 0.08 : 0.35 
+      });
+      const mrRearWall = new THREE.Mesh(new THREE.BoxGeometry(mrW, 3.4, 0.08), mrWallMat);
+      mrRearWall.position.set(0, mrFloorY + 1.7, -mrD / 2);
+      const mrLeftWall = new THREE.Mesh(new THREE.BoxGeometry(0.08, 3.4, mrD), mrWallMat);
+      mrLeftWall.position.set(-mrW / 2, mrFloorY + 1.7, 0);
+      machineGroup.add(mrRearWall, mrLeftWall);
+
+      // Louvered Ventilation Window on rear wall
+      const mrWindow = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 0.9, 0.12),
+        new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 })
+      );
+      mrWindow.position.set(mrW * 0.25, mrFloorY + 2.2, -mrD / 2);
+      machineGroup.add(mrWindow);
+
+      // 2. Full-Height Elevator Control Panel (تابلو فرمان آسانسور ایرانی آرمان فراز / داتیس)
+      const ctrlGroup = new THREE.Group();
+      ctrlGroup.position.set(-mrW / 2 + 0.65, mrFloorY + 1.15, mrD * 0.22);
+      
+      const ctrlBody = new THREE.Mesh(
+        new THREE.BoxGeometry(0.85, 1.9, 0.45),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.25 })
+      );
+      ctrlGroup.add(ctrlBody);
+
+      // TFT / LCD Status Screen on Control Panel
+      const ctrlLcd = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.42, 0.22),
+        new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+      );
+      ctrlLcd.position.set(0.43, 0.45, 0);
+      ctrlLcd.rotation.y = Math.PI / 2;
+      ctrlGroup.add(ctrlLcd);
+
+      // Main Rotary Disconnect Switch (کلید گردان اصلی صفر و یک برق)
+      const mainSw = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.06, 16),
+        new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.8 })
+      );
+      mainSw.rotation.z = Math.PI / 2;
+      mainSw.position.set(0.44, -0.15, 0.12);
+      ctrlGroup.add(mainSw);
+
+      // Metal Trunking / Conduit from Controller to Shaft Floor
+      const conduit = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.65, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+      );
+      conduit.position.set(0, -1.15, 0);
+      ctrlGroup.add(conduit);
+      machineGroup.add(ctrlGroup);
+
+      // 3. Three-Phase Electrical Distribution Box (جعبه برق ۳ فاز با کلید مینیاتوری)
+      const distBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 0.65, 0.22),
+        new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.65 })
+      );
+      distBox.position.set(-mrW / 2 + 0.35, mrFloorY + 2.1, -mrD * 0.18);
+      machineGroup.add(distBox);
+
+      // 4. Fire Extinguisher (کپسول آتش‌نشانی CO2 استاندارد ۶۳۰۳)
+      const fireExtGroup = new THREE.Group();
+      fireExtGroup.position.set(-mrW / 2 + 0.25, mrFloorY + 1.25, -mrD * 0.32);
+      const fireCyl = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.1, 0.65, 16),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.7, roughness: 0.2 })
+      );
+      const fireHose = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a })
+      );
+      fireHose.position.set(0.1, 0.1, 0);
+      fireExtGroup.add(fireCyl, fireHose);
+      machineGroup.add(fireExtGroup);
+
+      // 5. Machine Room Illumination Lamp (چراغ روشنایی سقف موتورخانه)
+      const mrLight = new THREE.PointLight(0xffffff, 1.8, 8, 1.2);
+      mrLight.position.set(0, mrCeilY - 0.3, 0);
+      machineGroup.add(mrLight);
+
+      // 6. Heavy Machine Bedplate Steel Beams (شاسی دوبل ناودانی با لاستیک‌های لرزه‌گیر نئوپرن)
+      const bedplate = new THREE.Mesh(
+        new THREE.BoxGeometry(sw3D - 0.4, 0.35, 2.2),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 })
+      );
+      bedplate.position.set(0, mrFloorY + 0.18, 0);
       machineGroup.add(bedplate);
 
-      // Neoprene Anti-Vibration Pads (لاستیک‌های لرزه‌گیر موتور)
-      [-halfW + 0.7, halfW - 0.7].forEach(padX => {
-        const pad = new THREE.Mesh(
-          new THREE.BoxGeometry(0.5, 0.1, 1.2),
-          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
-        );
-        pad.position.set(padX, -0.25, 0);
-        machineGroup.add(pad);
+      // Neoprene Anti-Vibration Pads (بالشتک‌های لرزه‌گیر نئوپرن)
+      [-halfW + 0.6, halfW - 0.6].forEach(px => {
+        [-0.7, 0.7].forEach(pz => {
+          const pad = new THREE.Mesh(
+            new THREE.BoxGeometry(0.45, 0.08, 0.45),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
+          );
+          pad.position.set(px, mrFloorY + 0.04, pz);
+          machineGroup.add(pad);
+        });
       });
 
-      // PMSM Synchronous Motor (Ziehl-Abegg ZAtop SM200 Style)
-      const motorBody = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.0, 1.0, 1.6, 32),
-        new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.2 })
-      );
-      motorBody.rotation.z = Math.PI / 2;
-      motorBody.position.set(0, 1.1, 0);
-      machineGroup.add(motorBody);
+      // 7. TRACTION MOTOR: GEARED (بهران/الکو حلزونی ایرانی) vs GEARLESS (PMSM دیسکی)
+      if (motorType === "geared") {
+        // IRANIAN GEARED MACHINE (موتور گیربکس بهران / الکو NR12 / موتوژن)
+        const gearedGroup = new THREE.Group();
+        gearedGroup.position.set(0, mrFloorY + 0.35, 0);
 
-      // Disc Brake Calipers (ترمز دیسکی دوبل استاندارد ۶۳۰۳)
-      const brakeGeo = new THREE.BoxGeometry(0.35, 0.8, 0.6);
-      const brakeMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.6 });
-      const brake1 = new THREE.Mesh(brakeGeo, brakeMat);
-      brake1.position.set(-0.9, 1.1, 0.6);
-      const brake2 = new THREE.Mesh(brakeGeo, brakeMat);
-      brake2.position.set(0.9, 1.1, 0.6);
-      machineGroup.add(brake1, brake2);
+        // Worm Gearbox Cast Iron Casing (پوسته چدنی حلزونی با رنگ آبی صنعتی)
+        const gearMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.75, roughness: 0.3 });
+        const gearboxCasing = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.1, 1.3), gearMat);
+        gearboxCasing.position.set(0, 0.55, 0.1);
+        gearedGroup.add(gearboxCasing);
 
-      // Traction Sheave with Cable Grooves (فلکه اصلی کشش)
-      const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
-      const tractionSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.35, 32), sheaveMat);
-      tractionSheave.rotation.z = Math.PI / 2;
-      tractionSheave.position.set(0, 1.1, -0.2);
-      machineGroup.add(tractionSheave);
+        // Oil Level Sight Glass (روغن‌نمای گیربکس)
+        const sightGlass = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16),
+          new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.1 })
+        );
+        sightGlass.rotation.x = Math.PI / 2;
+        sightGlass.position.set(0.35, 0.35, 0.76);
+        gearedGroup.add(sightGlass);
 
-      // DIVERTER / SECONDARY SHEAVE WITH ROPE GUARD (فلکه هرزگرد انحراف و میله محافظ ضد پرش)
-      const diverterSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.3, 32), sheaveMat);
+        // Horizontal Asynchronous Motor Body with Cooling Fins (الکتروموتور آسنکرون افقی با پره‌های خنک‌کننده)
+        const motorMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+        const asynchMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 1.8, 32), motorMat);
+        asynchMotor.rotation.z = Math.PI / 2;
+        asynchMotor.position.set(-1.4, 0.65, 0.1);
+        gearedGroup.add(asynchMotor);
+
+        // Cooling Fins (پره‌های خنک‌کننده روی الکتروموتور)
+        for (let fx = -2.1; fx <= -0.7; fx += 0.14) {
+          const fin = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.68, 0.03, 24), motorMat);
+          fin.rotation.z = Math.PI / 2;
+          fin.position.set(fx, 0.65, 0.1);
+          gearedGroup.add(fin);
+        }
+
+        // Yellow Manual Rescue Flywheel Handwheel (فلکه فلایویل زرد رنگ جهت مانور دستی در قطعی برق)
+        const flywheelMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.2 });
+        const flywheel = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.14, 32), flywheelMat);
+        flywheel.rotation.z = Math.PI / 2;
+        flywheel.position.set(-2.38, 0.65, 0.1);
+        gearedGroup.add(flywheel);
+
+        // Electro-Mechanical Double Shoe Brake with Red Manual Release Lever (ترمز فکی دوبل با اهرم قرمز خلاص‌کن)
+        const brakeMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.7 });
+        const brakeDrum = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 }));
+        brakeDrum.rotation.z = Math.PI / 2;
+        brakeDrum.position.set(-0.65, 0.65, 0.1);
+        
+        const brakeShoeL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.6, 0.32), brakeMat);
+        brakeShoeL.position.set(-0.65, 0.95, 0.1);
+        const brakeLever = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.7, 12), brakeMat);
+        brakeLever.position.set(-0.65, 1.45, 0.1);
+        gearedGroup.add(brakeDrum, brakeShoeL, brakeLever);
+
+        // Traction Sheave with Cable Grooves (فلکه اصلی کشش موتور گیربکس)
+        const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.15 });
+        const tractionSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.35, 32), sheaveMat);
+        tractionSheave.rotation.z = Math.PI / 2;
+        tractionSheave.position.set(0.7, 0.65, -0.2);
+        gearedGroup.add(tractionSheave);
+
+        machineGroup.add(gearedGroup);
+      } else {
+        // PMSM GEARLESS SLIM DISC MOTOR (موتور سنکرون گیرلس دیسکی باریک)
+        const gearlessGroup = new THREE.Group();
+        gearlessGroup.position.set(0, mrFloorY + 0.35, 0);
+
+        const motorBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.05, 1.05, 0.8, 32),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.88, roughness: 0.18 })
+        );
+        motorBody.rotation.z = Math.PI / 2;
+        motorBody.position.set(0, 1.1, 0);
+        gearlessGroup.add(motorBody);
+
+        const brakeGeo = new THREE.BoxGeometry(0.35, 0.8, 0.6);
+        const brakeMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.6 });
+        const brake1 = new THREE.Mesh(brakeGeo, brakeMat);
+        brake1.position.set(-0.55, 1.1, 0.6);
+        const brake2 = new THREE.Mesh(brakeGeo, brakeMat);
+        brake2.position.set(0.55, 1.1, 0.6);
+        gearlessGroup.add(brake1, brake2);
+
+        const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
+        const tractionSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.35, 32), sheaveMat);
+        tractionSheave.rotation.z = Math.PI / 2;
+        tractionSheave.position.set(0, 1.1, -0.2);
+        gearlessGroup.add(tractionSheave);
+
+        machineGroup.add(gearlessGroup);
+      }
+
+      // 8. DIVERTER SHEAVE WITH EXACT TANGENTIAL DROP TO CWT (فلکه هرزگرد انحراف و میله محافظ ضد پرش)
+      const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.15 });
+      const diverterSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.3, 32), sheaveMat);
       const guardRod = new THREE.Mesh(
         new THREE.CylinderGeometry(0.04, 0.04, 0.8, 16),
         new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8 })
@@ -796,22 +1045,22 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
 
       if (cwtPosition === "rear") {
         diverterSheave.rotation.z = Math.PI / 2;
-        diverterSheave.position.set(0, 0.35, -halfD + 0.65);
-        guardRod.position.set(0, 1.15, -halfD + 0.65);
+        diverterSheave.position.set(0, mrFloorY + 0.55, cwtPosZ);
+        guardRod.position.set(0, mrFloorY + 1.35, cwtPosZ);
       } else if (cwtPosition === "right") {
         diverterSheave.rotation.x = Math.PI / 2;
-        diverterSheave.position.set(halfW - 0.65, 0.35, 0);
-        guardRod.position.set(halfW - 0.65, 1.15, 0);
+        diverterSheave.position.set(cwtPosX, mrFloorY + 0.55, 0);
+        guardRod.position.set(cwtPosX, mrFloorY + 1.35, 0);
       } else if (cwtPosition === "left") {
         diverterSheave.rotation.x = Math.PI / 2;
-        diverterSheave.position.set(-halfW + 0.65, 0.35, 0);
-        guardRod.position.set(-halfW + 0.65, 1.15, 0);
+        diverterSheave.position.set(cwtPosX, mrFloorY + 0.55, 0);
+        guardRod.position.set(cwtPosX, mrFloorY + 1.35, 0);
       }
       machineGroup.add(diverterSheave, guardRod);
 
-      // Centrifugal Overspeed Governor Unit at Overhead (گاورنر سر چاهک)
+      // Centrifugal Overspeed Governor Unit in Machine Room
       const govUnitGroup = new THREE.Group();
-      govUnitGroup.position.set(halfW - 0.85, 1.2, -halfD + 0.85);
+      govUnitGroup.position.set(halfW - 0.85, mrFloorY + 0.65, -halfD + 0.85);
       const govUpperPulley = new THREE.Mesh(
         new THREE.CylinderGeometry(0.4, 0.4, 0.1, 24),
         new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.8 })
@@ -1701,7 +1950,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
     };
-  }, [isMounted, capacity, suspension, cwtPosition, wallMode, showRopes, showTravelingCable, showGovernor, showBrackets, showRefuge, speed, updateCameraPosition, shaftData, targetFloor, autoDispatchCycle]);
+  }, [isMounted, capacity, suspension, cwtPosition, wallMode, motorType, showRopes, showTravelingCable, showGovernor, showBrackets, showRefuge, speed, updateCameraPosition, shaftData, targetFloor, autoDispatchCycle]);
 
   const copyDxfData = () => {
     const dxfSample = `0\nSECTION\n2\nENTITIES\n0\nLINE\n8\nLD_SHAFT_3D_ISIRI_6303\n10\n0.0\n20\n0.0\n11\n${shaftData.sw}\n21\n${shaftData.sd}\n0\nENDSEC\n0\nEOF`;
@@ -1801,6 +2050,42 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
           >
             <Cpu className="w-3.5 h-3.5 text-emerald-300" />
             <span>{isFa ? "اسکلت و آهن‌کشی چاه" : "Steel Structure"}</span>
+          </button>
+          <button
+            onClick={() => setViewMode("machineroom")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+              viewMode === "machineroom" ? "bg-cyan-600 text-white shadow-sm font-black" : "text-cyan-400 hover:text-cyan-300"
+            )}
+            title={isFa ? "مشاهده فضای موتورخانه، تابلو فرمان ایرانی، جعبه برق، قلاب سقف و جزئیات" : "Inspect 3D Machine Room & Controller"}
+          >
+            <Building2 className="w-3.5 h-3.5 text-cyan-300" />
+            <span>{isFa ? "فضای موتورخانه ۳D" : "Machine Room"}</span>
+          </button>
+        </div>
+
+        {/* Iranian Motor Type Toggle: Geared vs Gearless */}
+        <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-mono font-bold">
+          <span className="text-slate-400 px-2 text-[11px] hidden sm:inline">
+            {isFa ? "مدل موتور:" : "Motor:"}
+          </span>
+          <button
+            onClick={() => setMotorType("geared")}
+            className={cn(
+              "px-3 py-1 rounded-lg transition-all flex items-center gap-1",
+              motorType === "geared" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+            )}
+          >
+            <span>{isFa ? "گیربکس ایرانی (بهران/الکو)" : "Geared Machine"}</span>
+          </button>
+          <button
+            onClick={() => setMotorType("gearless")}
+            className={cn(
+              "px-3 py-1 rounded-lg transition-all flex items-center gap-1",
+              motorType === "gearless" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+            )}
+          >
+            <span>{isFa ? "گیرلس سنکرون (PMSM)" : "Gearless PMSM"}</span>
           </button>
         </div>
       </div>
@@ -2198,6 +2483,37 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
                     <div className="flex justify-between">
                       <span className="text-slate-500">e^(fα):</span>
                       <span className="font-bold text-emerald-600">2.18 (عدم لغزش تضمین‌شده)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FASTENERS & BOLT SCHEDULE PER ISIRI 6303 (جدول استاندارد پیچ و مهره‌های ۸، ۱۰ و ۱۲) */}
+                <div className="p-3 rounded-xl bg-white border border-vertex-border space-y-2">
+                  <span className="text-xs font-mono font-bold text-slate-900 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{isFa ? "جدول محاسبات پیچ و مهره استاندارد" : "Bolts & Fasteners Schedule"}</span>
+                  </span>
+                  <div className="space-y-1 text-[11px] font-mono">
+                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-vertex-primary block">پیچ و مهره M8 (گرید ۸.۸)</span>
+                        <span className="text-[10px] text-vertex-steel">لنت کفشک، میکروسوئیچ و سنسور</span>
+                      </div>
+                      <span className="font-bold text-blue-600">~۱۴۴ عدد</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-vertex-primary block">پیچ و مهره M10 (گرید ۸.۸)</span>
+                        <span className="text-[10px] text-vertex-steel">لقمه ریل وزنه T50 و قفل درب</span>
+                      </div>
+                      <span className="font-bold text-blue-600">~۱۷۶ عدد</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-vertex-primary block">پیچ و مهره M12 (گرید ۱۰.۹)</span>
+                        <span className="text-[10px] text-vertex-steel">پشت‌بند ریل T89 و لچکی آهن‌کشی</span>
+                      </div>
+                      <span className="font-bold text-blue-600">~۱۹۲ عدد</span>
                     </div>
                   </div>
                 </div>

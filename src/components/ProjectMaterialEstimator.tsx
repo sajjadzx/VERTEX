@@ -114,6 +114,19 @@ export function ProjectMaterialEstimator({ locale }: ProjectMaterialEstimatorPro
     const kw = ((capacity * (1 - 0.45) * 9.81 * speed) / (1000 * 0.78));
     const motorKw = Math.max(3.7, Math.round(kw * 10) / 10);
 
+    // 7. Bolts, Nuts & High-Tensile Fasteners Schedule (محاسبات دقیق پیچ و مهره ۸، ۱۰ و ۱۲ گرید 8.8)
+    // پیچ M8 (لنت کفشک، میکروسوئیچ‌ها، شالترها، لیمیت‌ها و سنسورها):
+    const boltsM8Count = Math.round(stops * 14 + 60);
+    const boltsM8Kg = Math.round((boltsM8Count * 0.026) * 10) / 10;
+
+    // پیچ M10 (مهار براکت‌های ریل وزنه T50، کلمپ‌ها و قفل درب طبقات):
+    const boltsM10Count = Math.round(bracketCountPerSide * 2 * 4 + stops * 8 + 48);
+    const boltsM10Kg = Math.round((boltsM10Count * 0.048) * 10) / 10;
+
+    // پیچ M12 (براکت‌های ریل کابین T89، پشت‌بندهای فیش‌پلیت و لچکی‌های آهن‌کشی):
+    const boltsM12Count = Math.round(bracketCountPerSide * 2 * 6 + fishplatesCount * 4 + 64);
+    const boltsM12Kg = Math.round((boltsM12Count * 0.076) * 10) / 10;
+
     return {
       travelMeters: Math.round(travelMeters * 10) / 10,
       totalShaftHeightM: Math.round(totalShaftHeightM * 10) / 10,
@@ -136,7 +149,13 @@ export function ProjectMaterialEstimator({ locale }: ProjectMaterialEstimatorPro
       encoderCableM,
       carWeight,
       cwtWeight,
-      motorKw
+      motorKw,
+      boltsM8Count,
+      boltsM8Kg,
+      boltsM10Count,
+      boltsM10Kg,
+      boltsM12Count,
+      boltsM12Kg
     };
   }, [stops, floorHeight, pitDepth, overheadHeight, capacity, speed, suspension]);
 
@@ -230,6 +249,39 @@ export function ProjectMaterialEstimator({ locale }: ProjectMaterialEstimatorPro
       qty: calculations.fishplatesCount.toString(),
       unit: "عدد",
       standard: "ISO 7465",
+      category: "rails"
+    },
+    {
+      group: "۲. ریل‌های راهنما، براکت‌ها و لقمه‌ها",
+      code: "FST-01",
+      itemFa: "پیچ، مهره و واشر دوبل نمره M8 تمام‌رزوه گالوانیزه گرید 8.8",
+      itemEn: "Hex Bolts & Nuts M8 (Grade 8.8 DIN 933)",
+      spec: `پیچ M8x30 گالوانیزه گرم، مهره خودقفل‌شونده نایلونی و واشر فنری DIN 127 | جهت نصب لنت کفشک‌ها، میکروسوئیچ‌ها، شالترها و سنسورها`,
+      qty: `${calculations.boltsM8Count} عدد (${calculations.boltsM8Kg} کیلوگرم)`,
+      unit: "عدد / کیلوگرم",
+      standard: "DIN 933 / گرید ۸.۸",
+      category: "rails"
+    },
+    {
+      group: "۲. ریل‌های راهنما، براکت‌ها و لقمه‌ها",
+      code: "FST-02",
+      itemFa: "پیچ و مهره شش‌گوش خشکه نمره M10 گرید 8.8 فولادی",
+      itemEn: "Hex Bolts & Nuts M10 (Grade 8.8 DIN 933)",
+      spec: `پیچ M10x40 تمام‌رزوه همراه با مهره و واشر دوبل | جهت اتصال براکت‌های ریل وزنه T50 به آهن‌کشی، لقمه‌ها و قفل‌های درب طبقات`,
+      qty: `${calculations.boltsM10Count} عدد (${calculations.boltsM10Kg} کیلوگرم)`,
+      unit: "عدد / کیلوگرم",
+      standard: "DIN 933 / DIN 127 گرید ۸.۸",
+      category: "rails"
+    },
+    {
+      group: "۲. ریل‌های راهنما، براکت‌ها و لقمه‌ها",
+      code: "FST-03",
+      itemFa: "پیچ و مهره فولادی خشکه نمره M12 گرید 8.8 / 10.9",
+      itemEn: "High-Tensile Hex Bolts & Nuts M12 (Grade 8.8/10.9)",
+      spec: `پیچ M12x45 خشکه همراه با مهره کاسه‌نمدی و واشر فنری سخت‌کاری شده | جهت اتصال صلب پشت‌بندهای ریل کابین T89، براکت‌های اصلی و لچکی‌ها`,
+      qty: `${calculations.boltsM12Count} عدد (${calculations.boltsM12Kg} کیلوگرم)`,
+      unit: "عدد / کیلوگرم",
+      standard: "DIN 931 / DIN 933 فولاد سخت",
       category: "rails"
     },
 
