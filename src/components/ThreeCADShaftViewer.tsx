@@ -181,7 +181,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
   const [cwtPosition, setCwtPosition] = useState<CounterweightPosition>("rear");
   const [motorType, setMotorType] = useState<"geared" | "gearless">("geared");
   const [doorMechanism, setDoorMechanism] = useState<DoorMechanismType>("central");
-  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin" | "structure" | "machineroom">("3d");
+  const [viewMode, setViewMode] = useState<"3d" | "front" | "side" | "top" | "sheaves" | "cabin" | "structure" | "machineroom" | "pit">("3d");
   const [wallMode, setWallMode] = useState<"steel-structure" | "cutaway" | "transparent" | "wireframe">("steel-structure");
   const [activeSideTab, setActiveSideTab] = useState<"kinematics" | "calculations" | "heights" | "standards">("kinematics");
 
@@ -320,18 +320,27 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       cameraOrbitRef.current = { theta: 0.72, phi: 0.65, radius: 36, targetY: 2.5 };
     } else if (viewMode === "machineroom") {
       cameraOrbitRef.current = { theta: 0.45, phi: 0.82, radius: 14, targetY: 10.5 };
+    } else if (viewMode === "pit") {
+      // Direct focus on the elevator pit, buffer pedestals and buffer compression
+      cameraOrbitRef.current = { theta: 0.55, phi: 1.15, radius: 11, targetY: -7.0 };
     }
     updateCameraPosition();
   }, [viewMode, updateCameraPosition]);
 
-  // Dispatch elevator to a floor
+  // Dispatch elevator to a floor with millimeter-accurate leveling
+  // In our 3D world: 1 meter = 1.6 3D units.
+  // Leveling Rule: The car entrance sill (-carH / 2 + 0.085) must precisely align with the floor landing sill flY.
+  // Car group center Y = flY + carH / 2 - 0.085.
   const dispatchToFloor = (floorIdx: number) => {
     if (floorIdx < 0 || floorIdx > 3) return;
     setTargetFloor(floorIdx);
-    // Convert elevation meters to 3D Y units
-    // Shaft 3D scale: 1 meter = 1.6 3D units
-    const elevation3DY = (BUILDING_FLOORS[floorIdx].elevationM - 4.8) * 1.6;
-    targetYRef.current = elevation3DY;
+    const mTo3D = 1.6;
+    const floor0Y = -4.8 * mTo3D;
+    const flY = floor0Y + (BUILDING_FLOORS[floorIdx].elevationM * mTo3D);
+    const carH = (shaftData.ch / 1000) * 2.0;
+    // Exact leveling target Y so car floor matches landing sill exactly
+    const exactLevelY = flY + (carH / 2) - 0.085;
+    targetYRef.current = exactLevelY;
     setIsElevatorMoving(true);
     doorStateRef.current = "closed";
   };
@@ -405,6 +414,11 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     const floor0Y = -4.8 * mTo3D;
     const pitFloorY = floor0Y - (shaftData.pitDepthM * mTo3D);
     const overheadCeilingY = floor0Y + (shaftData.totalTravelM * mTo3D) + (shaftData.overheadM * mTo3D);
+
+    // Car and Cabin Dimensions in 3D units
+    const carW = (shaftData.cw / 1000) * 2.8;
+    const carD = (shaftData.cd / 1000) * 2.8;
+    const carH = (shaftData.ch / 1000) * 2.0;
 
     // Counterweight Position Coordinates
     let cwtPosX = 0;
@@ -684,6 +698,9 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     scene.add(railGroup);
 
     // D) LANDING DOORS & SILLS AT ALL 4 FLOORS (درب‌های طبقات، آستانه‌ها و ساسپندور)
+    // ISIRI 6303 / EN 81-20 Standard: Clear door opening height = 2.00m (in 3D scale: 2.0 * mTo3D = 3.2m or car clear height)
+    // Door sill is at elevation flY. Door leaves extend from flY + 0.04 up to flY + carDoorH (matching car cabin clear height exactly).
+    const carDoorH = carH * 0.95; // Exactly matching car sliding door height
     const landingDoorMeshes: { left: THREE.Mesh; right: THREE.Mesh; floorId: number }[] = [];
     BUILDING_FLOORS.forEach((fl) => {
       const flY = floor0Y + (fl.elevationM * mTo3D);
@@ -693,27 +710,27 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6 });
       const doorLeafMat = new THREE.MeshStandardMaterial({ color: 0xcfd8dc, metalness: 0.9, roughness: 0.15 });
 
-      // Aluminum Door Sill (آستانه آلومینیومی درب طبقه)
+      // Aluminum Door Sill (آستانه آلومینیومی درب طبقه تراز با کف طبقه)
       const sill = new THREE.Mesh(
-        new THREE.BoxGeometry(2.8, 0.08, 0.22),
+        new THREE.BoxGeometry(carW * 0.95, 0.06, 0.22),
         new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8 })
       );
-      sill.position.set(0, 0.04, 0);
+      sill.position.set(0, 0.03, 0);
       dGroup.add(sill);
 
-      // Frame Jambs and Transom Header
-      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3.2, 0.2), doorFrameMat);
-      jambL.position.set(-1.4, 1.6, 0);
-      const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3.2, 0.2), doorFrameMat);
-      jambR.position.set(1.4, 1.6, 0);
-      const header = new THREE.Mesh(new THREE.BoxGeometry(2.94, 0.25, 0.2), doorFrameMat);
-      header.position.set(0, 3.2, 0);
+      // Frame Jambs and Transom Header (چهارچوب و سردرب طبقه منطبق با ارتفاع مفید درب کابین)
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.14, carDoorH + 0.15, 0.2), doorFrameMat);
+      jambL.position.set(-carW * 0.48, (carDoorH + 0.15) / 2, 0);
+      const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.14, carDoorH + 0.15, 0.2), doorFrameMat);
+      jambR.position.set(carW * 0.48, (carDoorH + 0.15) / 2, 0);
+      const header = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.96 + 0.28, 0.22, 0.2), doorFrameMat);
+      header.position.set(0, carDoorH + 0.11, 0);
 
-      // 2-Panel Center/Telescopic Landing Sliding Door Leaves
-      const leafL = new THREE.Mesh(new THREE.BoxGeometry(1.25, 3.0, 0.05), doorLeafMat);
-      leafL.position.set(-0.64, 1.55, 0);
-      const leafR = new THREE.Mesh(new THREE.BoxGeometry(1.25, 3.0, 0.05), doorLeafMat);
-      leafR.position.set(0.64, 1.55, 0);
+      // 2-Panel Landing Door Leaves (ارتفاع و ابعاد دقیقاً برابر با لنگه‌های درب کابین برای همپوشانی ۱۰۰٪ در حالت باز و بسته)
+      const leafL = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.45, carDoorH, 0.04), doorLeafMat);
+      leafL.position.set(-carW * 0.23, carDoorH / 2 + 0.04, 0);
+      const leafR = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.45, carDoorH, 0.04), doorLeafMat);
+      leafR.position.set(carW * 0.23, carDoorH / 2 + 0.04, 0);
 
       dGroup.add(jambL, jambR, header, leafL, leafR);
       scene.add(dGroup);
@@ -722,31 +739,109 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     });
     landingDoorMeshesRef.current = landingDoorMeshes;
 
-    // E) PIT EQUIPMENT (بافرهای هیدرولیک، نردبان دسترسی و فلکه ته‌چاه گاورنر)
-    const bufMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.2 });
-    const bufBaseMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5 });
-
-    // Car Pit Buffers on Structural Steel Pedestals (پایه‌های ستونی بافر ضربه‌گیر با قوطی و لچکی مطابق نقشه ۲)
-    const pedestalMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.25 });
-    [-0.9, 0.9].forEach((bx) => {
-      const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.5), pedestalMat);
-      pedestal.position.set(bx, pitFloorY + 0.325, 0);
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.6), bufBaseMat);
-      base.position.set(bx, pitFloorY + 0.75, 0);
-      const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.1, 16), bufMat);
-      piston.position.set(bx, pitFloorY + 1.4, 0);
-      scene.add(pedestal, base, piston);
+    // E) PIT EQUIPMENT & REINFORCED CONCRETE PIT BASIN (چاهک بتنی، بافرهای هیدرولیک، سکوهای بافر و نردبان چاهک)
+    // 1. Reinforced Concrete Pit Floor & Walls Basin (کف و دیواره‌های بتنی چاهک مطابق نقشه ۲)
+    const pitBasinGroup = new THREE.Group();
+    const pitConcreteMat = new THREE.MeshStandardMaterial({ 
+      color: 0x475569, // Reinforced concrete grey
+      roughness: 0.85,
+      metalness: 0.15
     });
 
-    // CWT Buffer on Steel Pedestal (پایه بافر وزنه تعادل)
+    const pitDepth3D = shaftData.pitDepthM * mTo3D; // exact depth in 3D scale
+    // Heavy concrete bottom foundation slab (35cm thick)
+    const pitSlab = new THREE.Mesh(
+      new THREE.BoxGeometry(sw3D + 0.8, 0.4, sd3D + 0.8),
+      pitConcreteMat
+    );
+    pitSlab.position.set(0, pitFloorY - 0.2, 0);
+    pitSlab.receiveShadow = true;
+    pitBasinGroup.add(pitSlab);
+
+    // Concrete pit retaining walls (Back, Left, Right, Front bottom)
+    const pitBackWall = new THREE.Mesh(
+      new THREE.BoxGeometry(sw3D + 0.8, pitDepth3D, 0.25),
+      pitConcreteMat
+    );
+    pitBackWall.position.set(0, pitFloorY + pitDepth3D / 2, -halfD - 0.125);
+    const pitLeftWall = new THREE.Mesh(
+      new THREE.BoxGeometry(0.25, pitDepth3D, sd3D + 0.8),
+      pitConcreteMat
+    );
+    pitLeftWall.position.set(-halfW - 0.125, pitFloorY + pitDepth3D / 2, 0);
+    const pitRightWall = new THREE.Mesh(
+      new THREE.BoxGeometry(0.25, pitDepth3D, sd3D + 0.8),
+      pitConcreteMat
+    );
+    pitRightWall.position.set(halfW + 0.125, pitFloorY + pitDepth3D / 2, 0);
+    const pitFrontWall = new THREE.Mesh(
+      new THREE.BoxGeometry(sw3D + 0.8, pitDepth3D * 0.4, 0.25),
+      pitConcreteMat
+    );
+    pitFrontWall.position.set(0, pitFloorY + (pitDepth3D * 0.4) / 2, halfD + 0.125);
+
+    pitBasinGroup.add(pitBackWall, pitLeftWall, pitRightWall, pitFrontWall);
+    scene.add(pitBasinGroup);
+
+    // 2. High-Strength Oil/Polyurethane Buffers & Engineered Pedestals (پایه‌های ستونی بافر ضربه‌گیر با قوطی و لچکی مطابق نقشه ۲)
+    const bufMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.2 });
+    const bufBaseMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5 });
+    const pedestalMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
+    const gussetPlateMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, metalness: 0.85 }); // Blue gusset plates matching blueprint 2
+
+    // Car Pit Buffers on Structural Steel Pedestals (۲ پایه بافر ستونی با قوطی و لچکی زیر کفی کابین)
+    [-carW * 0.35, carW * 0.35].forEach((bx) => {
+      // Main box steel pedestal column (پایه ستونی قوطی)
+      const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.75, 0.45), pedestalMat);
+      pedestal.position.set(bx, pitFloorY + 0.375, 0);
+      
+      // Bottom anchor baseplate (صفحه پلیت اتصال به کف چاه با ۴ رول‌بولت)
+      const baseplate = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.08, 0.65), bufBaseMat);
+      baseplate.position.set(bx, pitFloorY + 0.04, 0);
+
+      // 4 Gusset Stiffener Triangular Plates (لچکی‌های مثلثی مقاوم‌ساز پایه بافر)
+      [
+        [-0.22, 0], [0.22, 0], [0, -0.22], [0, 0.22]
+      ].forEach(([gx, gz]) => {
+        const gusset = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.15), gussetPlateMat);
+        gusset.position.set(bx + gx, pitFloorY + 0.265, gz !== 0 ? gz : 0);
+        scene.add(gusset);
+      });
+
+      // Buffer mounting top plate
+      const topPlate = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 0.55), bufBaseMat);
+      topPlate.position.set(bx, pitFloorY + 0.78, 0);
+
+      // Hydraulic Buffer Cylinder & Piston with Rubber Strike Pad (سیلندر، پیستون هیدرولیک و پد ضربه‌گیر زرد)
+      const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.65, 24), bufBaseMat);
+      cylinder.position.set(bx, pitFloorY + 1.135, 0);
+      const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.55, 24), bufMat);
+      piston.position.set(bx, pitFloorY + 1.6, 0);
+      const strikePad = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 24), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 }));
+      strikePad.position.set(bx, pitFloorY + 1.88, 0);
+
+      scene.add(pedestal, baseplate, topPlate, cylinder, piston, strikePad);
+    });
+
+    // CWT Buffer on Structural Steel Pedestal (پایه بافر ستونی با قوطی و لچکی زیر وزنه تعادل)
     if (suspension !== "hydraulic_2_1") {
-      const cwtPedestal = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.65, 0.45), pedestalMat);
-      cwtPedestal.position.set(cwtPosX, pitFloorY + 0.325, cwtPosZ);
-      const cwtBufBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), bufBaseMat);
-      cwtBufBase.position.set(cwtPosX, pitFloorY + 0.75, cwtPosZ);
-      const cwtBufPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.1, 16), bufMat);
-      cwtBufPiston.position.set(cwtPosX, pitFloorY + 1.4, cwtPosZ);
-      scene.add(cwtPedestal, cwtBufBase, cwtBufPiston);
+      const cwtPedestal = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.75, 0.42), pedestalMat);
+      cwtPedestal.position.set(cwtPosX, pitFloorY + 0.375, cwtPosZ);
+      
+      const cwtBaseplate = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.6), bufBaseMat);
+      cwtBaseplate.position.set(cwtPosX, pitFloorY + 0.04, cwtPosZ);
+
+      const cwtTopPlate = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), bufBaseMat);
+      cwtTopPlate.position.set(cwtPosX, pitFloorY + 0.78, cwtPosZ);
+
+      const cwtCylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.65, 24), bufBaseMat);
+      cwtCylinder.position.set(cwtPosX, pitFloorY + 1.135, cwtPosZ);
+      const cwtPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.55, 24), bufMat);
+      cwtPiston.position.set(cwtPosX, pitFloorY + 1.6, cwtPosZ);
+      const cwtPad = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 24), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 }));
+      cwtPad.position.set(cwtPosX, pitFloorY + 1.88, cwtPosZ);
+
+      scene.add(cwtPedestal, cwtBaseplate, cwtTopPlate, cwtCylinder, cwtPiston, cwtPad);
     }
 
     // Pit Ladder (نردبان بازرسی کف چاهک طبق استاندارد ۶۳۰۳)
@@ -1164,10 +1259,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     // G) CAR ASSEMBLY: SLING, ROLLER GUIDES, CABIN & SLIDING CAR DOORS
     const carGroup = new THREE.Group();
     carGroupRef.current = carGroup;
-
-    const carW = (shaftData.cw / 1000) * 2.8;
-    const carD = (shaftData.cd / 1000) * 2.8;
-    const carH = (shaftData.ch / 1000) * 2.0;
 
     const slingMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.75, roughness: 0.25 });
     
@@ -2075,39 +2166,44 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       // Synchronize Landing Door only at current floor
       const activeLandingDoors = landingDoorMeshesRef.current.find(d => d.floorId === targetFloor);
       if (activeLandingDoors) {
+        const landingClearance = carW * 0.76;
         if (doorMechanism === "central") {
-          const landingSlideDist = dProg * 0.65;
-          activeLandingDoors.left.position.x = -0.64 - landingSlideDist;
-          activeLandingDoors.right.position.x = 0.64 + landingSlideDist;
+          const landingSlideDist = dProg * (carW * 0.38);
+          activeLandingDoors.left.position.x = -carW * 0.23 - landingSlideDist;
+          activeLandingDoors.right.position.x = carW * 0.23 + landingSlideDist;
           activeLandingDoors.left.rotation.y = 0;
           activeLandingDoors.right.rotation.y = 0;
+          activeLandingDoors.right.visible = true;
         } else if (doorMechanism === "telescopic_right") {
-          const strokeFast = dProg * 0.95;
-          const strokeSlow = dProg * 0.48;
-          activeLandingDoors.left.position.x = -0.64 + strokeSlow;
-          activeLandingDoors.right.position.x = 0.64 + strokeFast;
+          const strokeFast = dProg * (landingClearance * 0.55);
+          const strokeSlow = dProg * (landingClearance * 0.28);
+          activeLandingDoors.left.position.x = -carW * 0.23 + strokeSlow;
+          activeLandingDoors.right.position.x = carW * 0.23 + strokeFast;
           activeLandingDoors.left.rotation.y = 0;
           activeLandingDoors.right.rotation.y = 0;
+          activeLandingDoors.right.visible = true;
         } else if (doorMechanism === "telescopic_left") {
-          const strokeFast = dProg * 0.95;
-          const strokeSlow = dProg * 0.48;
-          activeLandingDoors.left.position.x = -0.64 - strokeFast;
-          activeLandingDoors.right.position.x = 0.64 - strokeSlow;
+          const strokeFast = dProg * (landingClearance * 0.55);
+          const strokeSlow = dProg * (landingClearance * 0.28);
+          activeLandingDoors.left.position.x = -carW * 0.23 - strokeFast;
+          activeLandingDoors.right.position.x = -carW * 0.23 - strokeSlow;
           activeLandingDoors.left.rotation.y = 0;
           activeLandingDoors.right.rotation.y = 0;
+          activeLandingDoors.right.visible = true;
         } else if (doorMechanism === "folding_bus") {
           const foldAngle = dProg * (Math.PI / 2.6);
           activeLandingDoors.left.rotation.y = foldAngle;
           activeLandingDoors.right.rotation.y = -foldAngle;
-          activeLandingDoors.left.position.x = -0.64 - dProg * 0.45;
-          activeLandingDoors.right.position.x = 0.64 + dProg * 0.45;
+          activeLandingDoors.left.position.x = -carW * 0.23 - dProg * 0.35;
+          activeLandingDoors.right.position.x = carW * 0.23 + dProg * 0.35;
+          activeLandingDoors.right.visible = true;
         } else if (doorMechanism === "semi_automatic") {
           // Real Hinged Landing Door (درب لولایی طبقه با لولا در سمت چپ و بازشو ۹۰ درجه به بیرون)
           const hingeAngle = -dProg * (Math.PI / 2.2);
           activeLandingDoors.left.rotation.y = hingeAngle;
           // Offset pivot to hinge edge
-          activeLandingDoors.left.position.x = -1.25 + Math.cos(hingeAngle) * 0.61;
-          activeLandingDoors.left.position.z = Math.sin(-hingeAngle) * 0.61;
+          activeLandingDoors.left.position.x = -carW * 0.46 + Math.cos(hingeAngle) * (carW * 0.23);
+          activeLandingDoors.left.position.z = Math.sin(-hingeAngle) * (carW * 0.23);
           // Right panel remains fixed frame or second leaf
           activeLandingDoors.right.visible = false;
         }
@@ -2267,6 +2363,17 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
           >
             <Building2 className="w-3.5 h-3.5 text-cyan-300" />
             <span>{isFa ? "فضای موتورخانه ۳D" : "Machine Room"}</span>
+          </button>
+          <button
+            onClick={() => setViewMode("pit")}
+            className={cn(
+              "px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5",
+              viewMode === "pit" ? "bg-orange-600 text-white shadow-sm font-black" : "text-orange-400 hover:text-orange-300"
+            )}
+            title={isFa ? "مشاهده چاهک، سکوهای بافر ضربه‌گیر و تجهیزات انتهای چاهک" : "Inspect Pit & Buffer Pedestals"}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-orange-300" />
+            <span>{isFa ? "چاهک و سکوی بافر ۳D" : "Pit & Buffers"}</span>
           </button>
         </div>
 
