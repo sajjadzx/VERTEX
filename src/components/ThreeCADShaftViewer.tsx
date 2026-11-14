@@ -419,6 +419,7 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     const carW = (shaftData.cw / 1000) * 2.8;
     const carD = (shaftData.cd / 1000) * 2.8;
     const carH = (shaftData.ch / 1000) * 2.0;
+    const carDoorH = carH * 0.95; // Clear door opening height matching car sliding door height
 
     // Counterweight Position Coordinates
     let cwtPosX = 0;
@@ -717,7 +718,6 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     // D) LANDING DOORS & SILLS AT ALL 4 FLOORS (درب‌های طبقات، آستانه‌ها و ساسپندور)
     // ISIRI 6303 / EN 81-20 Standard: Clear door opening height = 2.00m (in 3D scale: 2.0 * mTo3D = 3.2m or car clear height)
     // Door sill is at elevation flY. Door leaves extend from flY + 0.04 up to flY + carDoorH (matching car cabin clear height exactly).
-    const carDoorH = carH * 0.95; // Exactly matching car sliding door height
     const landingDoorMeshes: { left: THREE.Mesh; right: THREE.Mesh; floorId: number }[] = [];
     BUILDING_FLOORS.forEach((fl) => {
       const flY = floor0Y + (fl.elevationM * mTo3D);
