@@ -487,6 +487,10 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
     });
 
     // Horizontal Steel Ring Beams (کلاف‌کشی ناودانی و نبشی دور تا دور چاه در تمام ۴ وجه)
+    // IMPORTANT: According to elevator shaft structural blueprints (Image 1 RELEVATOR & مبحث ۱۵),
+    // the front side has DOOR OPENINGS at every floor. Steel ring beams must NOT cross the door openings!
+    // Ring beams are placed on Rear, Left, and Right faces at every ring elevation.
+    // On the Front face, a beam is only placed as a door header transom beam directly above each landing door entrance!
     const beamMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
     for (let by = pitFloorY + 1.8; by < overheadCeilingY; by += (2.2 * mTo3D)) {
       // Rear Ring Beam
@@ -504,23 +508,36 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       bRight.position.set(halfW, by, 0);
       wallGroup.add(bRight);
 
-      // Front Header Ring Beam (کلاف افقی جلو - بالای درب‌ها)
-      const bFront = new THREE.Mesh(new THREE.BoxGeometry(sw3D, 0.22, 0.22), beamMat);
-      bFront.position.set(0, by, halfD);
-      wallGroup.add(bFront);
-
-      // Corner Connection Gusset Plates (ورق‌های لچکی اتصال کلاف به ستون در ۴ گوشه)
+      // Rear and Side Corner Connection Gusset Plates (ورق‌های لچکی اتصال کلاف به ستون)
       [
         [-halfW + 0.18, -halfD + 0.18],
-        [halfW - 0.18, -halfD + 0.18],
-        [-halfW + 0.18, halfD - 0.18],
-        [halfW - 0.18, halfD - 0.18]
+        [halfW - 0.18, -halfD + 0.18]
       ].forEach(([gx, gz]) => {
         const gusset = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.18), gussetMat);
         gusset.position.set(gx, by, gz);
         wallGroup.add(gusset);
       });
     }
+
+    // Front Structural Framing (ناودانی نعل‌درگاه و ستونک‌های تقویتی درب طبقه مطابق نقشه ۱ آهن‌کشی)
+    BUILDING_FLOORS.forEach((fl) => {
+      const flY = floor0Y + (fl.elevationM * mTo3D);
+      // Front Lintol Beam directly above the door header transom (نعل‌درگاه بالای سردرب)
+      const doorTopY = flY + carDoorH + 0.28;
+      const bFrontTransom = new THREE.Mesh(new THREE.BoxGeometry(sw3D, 0.22, 0.22), beamMat);
+      bFrontTransom.position.set(0, doorTopY, halfD);
+      wallGroup.add(bFrontTransom);
+
+      // Front Gussets at transom connection
+      [
+        [-halfW + 0.18, halfD - 0.18],
+        [halfW - 0.18, halfD - 0.18]
+      ].forEach(([gx, gz]) => {
+        const gusset = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.18), gussetMat);
+        gusset.position.set(gx, doorTopY, gz);
+        wallGroup.add(gusset);
+      });
+    });
 
     // Heavy Overhead Machine Room Support I-Beams (تیرآهن‌های دوبل نمره ۱۸ و ۲۰ سقف چاهک)
     const iBeamMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.2 });
@@ -725,6 +742,46 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       jambR.position.set(carW * 0.48, (carDoorH + 0.15) / 2, 0);
       const header = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.96 + 0.28, 0.22, 0.2), doorFrameMat);
       header.position.set(0, carDoorH + 0.11, 0);
+
+      // Landing Door Suspension Track & Mechanism (مکانیزم ساسپنشن، ریل آویز لنگه‌ها و قرقره‌های تفلونی درب طبقه)
+      const suspensionRail = new THREE.Mesh(
+        new THREE.BoxGeometry(carW * 0.96, 0.12, 0.14),
+        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9, roughness: 0.2 })
+      );
+      suspensionRail.position.set(0, carDoorH + 0.05, 0.08);
+
+      // Suspension Hanger Rollers (قرقره‌های آویز دوبل بلبرینگی روی ریل ساسپنشن)
+      const rollerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7, roughness: 0.2 });
+      [-carW * 0.32, -carW * 0.14, carW * 0.14, carW * 0.32].forEach((rx) => {
+        const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.04, 16), rollerMat);
+        roller.rotation.x = Math.PI / 2;
+        roller.position.set(rx, carDoorH + 0.07, 0.12);
+        dGroup.add(roller);
+      });
+
+      // Synchronizing Cable / Steel Rope for Door Panels (سیم هماهنگ‌کننده مکانیزم تلسکوپی/سانترال)
+      const syncCable = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.008, 0.008, carW * 0.75, 8),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95 })
+      );
+      syncCable.rotation.z = Math.PI / 2;
+      syncCable.position.set(0, carDoorH + 0.09, 0.13);
+
+      // Mechanical Door Interlock & Lock Hook (قفل ایمنی مکانیکی و کنتاکت درب طبقه طبق استاندارد ۶۳۰۳)
+      const lockBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.24, 0.12),
+        new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.6 })
+      );
+      lockBox.position.set(-carW * 0.05, carDoorH + 0.14, 0.09);
+
+      // Unlocking Skate Roller Pickups (کمان درب / قفل‌کن محرک با زبانه کنتاکتور)
+      const lockHook = new THREE.Mesh(
+        new THREE.BoxGeometry(0.06, 0.12, 0.06),
+        new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.85 })
+      );
+      lockHook.position.set(-carW * 0.05, carDoorH + 0.03, 0.1);
+
+      dGroup.add(suspensionRail, syncCable, lockBox, lockHook);
 
       // 2-Panel Landing Door Leaves (ارتفاع و ابعاد دقیقاً برابر با لنگه‌های درب کابین برای همپوشانی ۱۰۰٪ در حالت باز و بسته)
       const leafL = new THREE.Mesh(new THREE.BoxGeometry(carW * 0.45, carDoorH, 0.04), doorLeafMat);
@@ -1180,16 +1237,16 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         brakeLever.position.set(-0.65, 1.45, 0.1);
         gearedGroup.add(brakeDrum, brakeShoeL, brakeLever);
 
-        // Traction Sheave with Cable Grooves (فلکه اصلی کشش موتور گیربکس)
+        // Traction Sheave with Cable Grooves (فلکه اصلی کشش موتور گیربکس دقیقاً در مرکز X=0)
         const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.15 });
         const tractionSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.35, 32), sheaveMat);
         tractionSheave.rotation.z = Math.PI / 2;
-        tractionSheave.position.set(0.7, 0.65, -0.2);
+        tractionSheave.position.set(0.0, 0.65, -0.2);
         gearedGroup.add(tractionSheave);
 
         machineGroup.add(gearedGroup);
       } else {
-        // PMSM GEARLESS SLIM DISC MOTOR (موتور سنکرون گیرلس دیسکی باریک)
+        // PMSM GEARLESS SLIM DISC MOTOR (موتور سنکرون گیرلس دیسکی باریک در مرکز X=0)
         const gearlessGroup = new THREE.Group();
         gearlessGroup.position.set(0, mrPedestalY + 0.35, 0);
 
@@ -1212,13 +1269,14 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
         const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1 });
         const tractionSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.35, 32), sheaveMat);
         tractionSheave.rotation.z = Math.PI / 2;
-        tractionSheave.position.set(0, 1.1, -0.2);
+        tractionSheave.position.set(0.0, 1.1, -0.2);
         gearlessGroup.add(tractionSheave);
 
         machineGroup.add(gearlessGroup);
       }
 
-      // 9. DIVERTER SHEAVE WITH EXACT TANGENTIAL DROP TO CWT (فلکه هرزگرد انحراف و میله محافظ ضد پرش)
+      // 9. DIVERTER SHEAVE WITH EXACT TANGENTIAL DROP TO CWT (فلکه هرزگرد انحراف هم‌راستا با فلکه موتور با فاصله استاندارد)
+      // Standard Lift Designer Rule: Diverter sheave is aligned with traction sheave grooves and spaced closely (0.75m to 0.9m)
       const sheaveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.15 });
       const diverterSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.3, 32), sheaveMat);
       const guardRod = new THREE.Mesh(
@@ -1227,19 +1285,20 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       );
       guardRod.rotation.x = Math.PI / 2;
 
+      // Realistic engineered diverter spacing (closer to motor, collinear with grooves)
+      const divZ = cwtPosition === "rear" ? Math.max(-halfD + 0.65, -1.15) : -0.2;
+      const divX = cwtPosition === "rear" ? 0.0 : (cwtPosition === "right" ? Math.min(halfW - 0.65, 1.15) : Math.max(-halfW + 0.65, -1.15));
+
       if (cwtPosition === "rear") {
         diverterSheave.rotation.z = Math.PI / 2;
-        diverterSheave.position.set(0, mrPedestalY + 0.55, cwtPosZ);
-        guardRod.position.set(0, mrPedestalY + 1.35, cwtPosZ);
-      } else if (cwtPosition === "right") {
+        diverterSheave.position.set(0.0, mrPedestalY + 0.55, divZ);
+        guardRod.position.set(0.0, mrPedestalY + 1.35, divZ);
+      } else {
         diverterSheave.rotation.x = Math.PI / 2;
-        diverterSheave.position.set(cwtPosX, mrPedestalY + 0.55, 0);
-        guardRod.position.set(cwtPosX, mrPedestalY + 1.35, 0);
-      } else if (cwtPosition === "left") {
-        diverterSheave.rotation.x = Math.PI / 2;
-        diverterSheave.position.set(cwtPosX, mrPedestalY + 0.55, 0);
-        guardRod.position.set(cwtPosX, mrPedestalY + 1.35, 0);
+        diverterSheave.position.set(divX, mrPedestalY + 0.55, divZ);
+        guardRod.position.set(divX, mrPedestalY + 1.35, divZ);
       }
+      machineGroup.add(diverterSheave, guardRod);
       machineGroup.add(diverterSheave, guardRod);
 
       // Centrifugal Overspeed Governor Unit in Machine Room
@@ -1715,15 +1774,15 @@ export function ThreeCADShaftViewer({ locale }: ThreeCADShaftViewerProps) {
       const trRadius = 0.85;
       const trCenterY = sheaveBaseY + (motorType === "geared" ? 0.65 : 1.1);
       const trTopY = trCenterY + trRadius;
-      const trCenterX = motorType === "geared" ? 0.7 : 0.0;
+      const trCenterX = 0.0;
       const trCenterZ = -0.2;
 
-      // Diverter Sheave geometry & world tangent coordinates
+      // Diverter Sheave geometry & world tangent coordinates (Aligned and compact)
       const divRadius = 0.72;
       const divCenterY = mrPedestalY + 0.55;
       const divTopY = divCenterY + divRadius;
-      const divCenterX = cwtPosition === "rear" ? 0.0 : (cwtPosition === "right" ? cwtPosX : cwtPosX);
-      const divCenterZ = cwtPosition === "rear" ? cwtPosZ : 0.0;
+      const divCenterZ = cwtPosition === "rear" ? Math.max(-halfD + 0.65, -1.15) : -0.2;
+      const divCenterX = cwtPosition === "rear" ? 0.0 : (cwtPosition === "right" ? Math.min(halfW - 0.65, 1.15) : Math.max(-halfW + 0.65, -1.15));
 
       if (suspension === "1_1_direct") {
         for (let i = 0; i < ropeOffsets.length && meshIdx + 4 < meshes.length; i++) {
